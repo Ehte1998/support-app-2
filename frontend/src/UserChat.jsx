@@ -1,4 +1,4 @@
-// Updated UserChat.jsx - User can access chat immediately after sending message
+// Updated UserChat.jsx - Fixed quick payment buttons and Razorpay integration
 import { useState, useEffect } from 'react'
 import io from 'socket.io-client'
 
@@ -493,7 +493,8 @@ function MeetingLinksButtons({ messageId, user }) {
         const response = await fetch(`${API_URL}/api/messages/${messageId}`)
         if (response.ok) {
           const messageData = await response.json()
-          setMeetingLinks(messageData.meetingLinks)
+          console.log('Fetched meeting links:', messageData.meetingLinks) // Debug log
+          setMeetingLinks(messageData.meetingLinks || {})
         }
       } catch (error) {
         console.error('Error fetching meeting links:', error)
@@ -522,17 +523,32 @@ function MeetingLinksButtons({ messageId, user }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(userLinks)
+        body: JSON.stringify({
+          googleMeet: userLinks.googleMeet,
+          zoom: userLinks.zoom
+        })
       })
 
       if (response.ok) {
         const result = await response.json()
-        setMeetingLinks(result.meetingLinks)
+        console.log('User links set response:', result) // Debug log
+        setMeetingLinks(result.meetingLinks || {})
         setShowLinkForm(false)
         setUserLinks({ googleMeet: '', zoom: '' })
         alert('Meeting links set successfully!')
+        
+        // Force refresh the links
+        setTimeout(() => {
+          fetch(`${API_URL}/api/messages/${messageId}`)
+            .then(res => res.json())
+            .then(data => {
+              console.log('Refreshed meeting links:', data.meetingLinks) // Debug log
+              setMeetingLinks(data.meetingLinks || {})
+            })
+        }, 1000)
       } else {
-        alert('Failed to set meeting links')
+        const errorData = await response.json()
+        alert('Failed to set meeting links: ' + (errorData.error || 'Unknown error'))
       }
     } catch (error) {
       console.error('Error setting user meeting links:', error)
@@ -627,48 +643,84 @@ function MeetingLinksButtons({ messageId, user }) {
 
   return (
     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-      {meetingLinks && (meetingLinks.googleMeet || meetingLinks.zoom) && (
-        <>
-          {meetingLinks.googleMeet && (
-            <button
-              onClick={() => window.open(meetingLinks.googleMeet, '_blank')}
-              style={{
-                padding: '0.5rem 0.75rem',
-                background: '#10b981',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                fontWeight: '500',
-                fontSize: '0.875rem'
-              }}
-            >
-              Join Google Meet
-            </button>
-          )}
-          {meetingLinks.zoom && (
-            <button
-              onClick={() => window.open(meetingLinks.zoom, '_blank')}
-              style={{
-                padding: '0.5rem 0.75rem',
-                background: '#2563eb',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                fontWeight: '500',
-                fontSize: '0.875rem'
-              }}
-            >
-              Join Zoom
-            </button>
-          )}
-        </>
+      {/* Show Admin-set links */}
+      {meetingLinks && meetingLinks.googleMeet && (
+        <button
+          onClick={() => window.open(meetingLinks.googleMeet, '_blank')}
+          style={{
+            padding: '0.5rem 0.75rem',
+            background: '#10b981',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: '500',
+            fontSize: '0.875rem'
+          }}
+        >
+          Join Google Meet (Counselor)
+        </button>
       )}
       
-      {(!meetingLinks || (!meetingLinks.googleMeet && !meetingLinks.zoom)) && (
+      {meetingLinks && meetingLinks.zoom && (
+        <button
+          onClick={() => window.open(meetingLinks.zoom, '_blank')}
+          style={{
+            padding: '0.5rem 0.75rem',
+            background: '#2563eb',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: '500',
+            fontSize: '0.875rem'
+          }}
+        >
+          Join Zoom (Counselor)
+        </button>
+      )}
+
+      {/* Show User-set links */}
+      {meetingLinks && meetingLinks.userGoogleMeet && (
+        <button
+          onClick={() => window.open(meetingLinks.userGoogleMeet, '_blank')}
+          style={{
+            padding: '0.5rem 0.75rem',
+            background: '#059669',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: '500',
+            fontSize: '0.875rem'
+          }}
+        >
+          Join My Google Meet
+        </button>
+      )}
+      
+      {meetingLinks && meetingLinks.userZoom && (
+        <button
+          onClick={() => window.open(meetingLinks.userZoom, '_blank')}
+          style={{
+            padding: '0.5rem 0.75rem',
+            background: '#1d4ed8',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: '500',
+            fontSize: '0.875rem'
+          }}
+        >
+          Join My Zoom
+        </button>
+      )}
+      
+      {/* Show message when no links available */}
+      {(!meetingLinks || (!meetingLinks.googleMeet && !meetingLinks.zoom && !meetingLinks.userGoogleMeet && !meetingLinks.userZoom)) && (
         <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-          No video call links available
+          No video call links available yet
         </div>
       )}
       
@@ -689,6 +741,82 @@ function MeetingLinksButtons({ messageId, user }) {
       </button>
     </div>
   )
+}
+
+// Quick Payment Function
+function makeQuickPayment(amount, messageId) {
+  return new Promise((resolve, reject) => {
+    // Load Razorpay script if not already loaded
+    if (!window.Razorpay) {
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.onload = () => processPayment(amount, messageId, resolve, reject)
+      script.onerror = () => reject('Failed to load Razorpay')
+      document.head.appendChild(script)
+    } else {
+      processPayment(amount, messageId, resolve, reject)
+    }
+  })
+}
+
+async function processPayment(amount, messageId, resolve, reject) {
+  try {
+    const orderResponse = await fetch(`${API_URL}/api/create-payment-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: amount, messageId: messageId })
+    })
+
+    const orderData = await orderResponse.json()
+
+    if (!orderData.success) {
+      throw new Error(orderData.error || 'Failed to create payment order')
+    }
+
+    const options = {
+      key: orderData.keyId,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: 'Support Counseling',
+      description: 'Thank you for supporting our counseling services',
+      order_id: orderData.orderId,
+      handler: async function (response) {
+        try {
+          const verificationResponse = await fetch(`${API_URL}/api/verify-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              messageId: messageId,
+              amount: orderData.amount
+            })
+          })
+
+          const verificationData = await verificationResponse.json()
+          if (verificationData.success) {
+            resolve(`Payment of ₹${amount} successful! Thank you for your support.`)
+          } else {
+            reject('Payment verification failed. Please contact support.')
+          }
+        } catch (error) {
+          reject('Payment verification failed. Please contact support.')
+        }
+      },
+      modal: {
+        ondismiss: function() {
+          reject('Payment cancelled')
+        }
+      },
+      theme: { color: '#3b82f6' }
+    }
+
+    const rzp = new window.Razorpay(options)
+    rzp.open()
+  } catch (error) {
+    reject('Payment failed. Please try again.')
+  }
 }
 
 // Main User Interface Component with Immediate Chat Access
@@ -1121,76 +1249,6 @@ function SimplifiedUserInterface({ user }) {
                   {userCompletedSession || sessionStatus === 'completed' ? '✓ Session Ended' : 'End Session'}
                 </button>
 
-                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  {[50, 100, 200].map(amount => (
-                    <button
-                      key={amount}
-                      onClick={async () => {
-                        if (confirm(`Make a quick payment of ₹${amount}?`)) {
-                          try {
-                            const orderResponse = await fetch(`${API_URL}/api/create-payment-order`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ amount: amount, messageId: messageId })
-                            })
-
-                            const orderData = await orderResponse.json()
-
-                            if (orderData.success && window.Razorpay) {
-                              const options = {
-                                key: orderData.keyId,
-                                amount: orderData.amount,
-                                currency: orderData.currency,
-                                name: 'Support Counseling',
-                                description: 'Thank you for supporting our counseling services',
-                                order_id: orderData.orderId,
-                                handler: async function (response) {
-                                  try {
-                                    const verificationResponse = await fetch(`${API_URL}/api/verify-payment`, {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({
-                                        razorpay_order_id: response.razorpay_order_id,
-                                        razorpay_payment_id: response.razorpay_payment_id,
-                                        razorpay_signature: response.razorpay_signature,
-                                        messageId: messageId,
-                                        amount: orderData.amount
-                                      })
-                                    })
-
-                                    const verificationData = await verificationResponse.json()
-                                    if (verificationData.success) {
-                                      alert(`Payment of ₹${amount} successful! Thank you for your support.`)
-                                    }
-                                  } catch (error) {
-                                    alert('Payment verification failed. Please contact support.')
-                                  }
-                                },
-                                theme: { color: '#3b82f6' }
-                              }
-                              new window.Razorpay(options).open()
-                            }
-                          } catch (error) {
-                            alert('Payment failed. Please try again.')
-                          }
-                        }
-                      }}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        background: '#f3f4f6',
-                        color: '#374151',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '0.25rem',
-                        cursor: 'pointer',
-                        fontSize: '0.75rem',
-                        fontWeight: '500'
-                      }}
-                    >
-                      ₹{amount}
-                    </button>
-                  ))}
-                </div>
-
                 <button
                   onClick={() => {
                     setShowChat(false)
@@ -1207,7 +1265,7 @@ function SimplifiedUserInterface({ user }) {
                     fontWeight: '500'
                   }}
                 >
-                  More Options
+                  Payment Options
                 </button>
                 
                 <button
