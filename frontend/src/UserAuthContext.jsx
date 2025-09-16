@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 
+// Get API URL from environment variables
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 const UserAuthContext = createContext()
 
 export const useUserAuth = () => {
@@ -25,7 +28,7 @@ export const UserAuthProvider = ({ children }) => {
 
   const validateToken = async (token) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/validate-user', {
+      const response = await fetch(`${API_URL}/api/auth/validate-user`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -49,7 +52,7 @@ export const UserAuthProvider = ({ children }) => {
 
   const register = async (email, password, name, isAnonymous = false) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -74,7 +77,7 @@ export const UserAuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/user-login', {
+      const response = await fetch(`${API_URL}/api/auth/user-login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

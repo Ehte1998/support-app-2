@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import io from 'socket.io-client'
 import Peer from 'simple-peer'
 
+// Get API URL from environment variables
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 function CallInterface({ messageId, isAdmin, onCallEnd }) {
   const [socket, setSocket] = useState(null)
   const [stream, setStream] = useState(null)
@@ -21,7 +24,7 @@ function CallInterface({ messageId, isAdmin, onCallEnd }) {
 
   // Initialize socket connection and media
   useEffect(() => {
-    const newSocket = io('http://localhost:5000')
+    const newSocket = io(API_URL)
     setSocket(newSocket)
 
     // Join appropriate room

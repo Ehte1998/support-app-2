@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import io from 'socket.io-client'
 
+// Get API URL from environment variables
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 function ChatInterface({ messageId, isAdmin = false, initialMessage = null }) {
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
@@ -24,7 +27,7 @@ function ChatInterface({ messageId, isAdmin = false, initialMessage = null }) {
   useEffect(() => {
     if (!messageId) return
 
-    const newSocket = io('http://localhost:5000')
+    const newSocket = io(API_URL)
     setSocket(newSocket)
 
     // Join appropriate rooms
@@ -35,7 +38,7 @@ function ChatInterface({ messageId, isAdmin = false, initialMessage = null }) {
     }
 
     // Fetch initial message data
-    fetch(`http://localhost:5000/api/messages/${messageId}`)
+    fetch(`${API_URL}/api/messages/${messageId}`)
       .then(res => res.json())
       .then(data => {
         setMessageData(data)
@@ -107,7 +110,7 @@ function ChatInterface({ messageId, isAdmin = false, initialMessage = null }) {
 
   const updateMeetingLinks = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/messages/${messageId}/meeting-links`, {
+      const response = await fetch(`${API_URL}/api/messages/${messageId}/meeting-links`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(meetingLinks)
@@ -125,7 +128,7 @@ function ChatInterface({ messageId, isAdmin = false, initialMessage = null }) {
 
   const sendCallNotification = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/messages/${messageId}/send-call-notification`, {
+      const response = await fetch(`${API_URL}/api/messages/${messageId}/send-call-notification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })

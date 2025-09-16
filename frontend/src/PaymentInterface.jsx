@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 
+// Get API URL from environment variables
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
   const [customAmount, setCustomAmount] = useState('')
   const [selectedAmount, setSelectedAmount] = useState(100)
@@ -16,7 +19,9 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
     document.body.appendChild(script)
 
     return () => {
-      document.body.removeChild(script)
+      if (document.body.contains(script)) {
+        document.body.removeChild(script)
+      }
     }
   }, [])
 
@@ -26,7 +31,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 
     try {
       // Create order
-      const orderResponse = await fetch('http://localhost:5000/api/create-payment-order', {
+      const orderResponse = await fetch(`${API_URL}/api/create-payment-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,7 +59,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         handler: async function (response) {
           try {
             // Verify payment
-            const verificationResponse = await fetch('http://localhost:5000/api/verify-payment', {
+            const verificationResponse = await fetch(`${API_URL}/api/verify-payment`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
