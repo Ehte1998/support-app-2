@@ -2,6 +2,9 @@
 import { useState, useEffect } from 'react'
 import io from 'socket.io-client'
 
+// Get API URL from environment variables
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 // Rating Component
 function RatingComponent({ onRatingSubmit }) {
   const [rating, setRating] = useState(0)
@@ -55,7 +58,6 @@ function RatingComponent({ onRatingSubmit }) {
         How was your counseling experience?
       </div>
 
-      {/* Star Rating */}
       <div style={{
         display: 'flex',
         justifyContent: 'center',
@@ -96,7 +98,6 @@ function RatingComponent({ onRatingSubmit }) {
          'Excellent'}
       </div>
 
-      {/* Feedback Text Area */}
       <div style={{ marginBottom: '1rem' }}>
         <label style={{
           display: 'block',
@@ -147,6 +148,7 @@ function RatingComponent({ onRatingSubmit }) {
     </div>
   )
 }
+
 function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
   const [customAmount, setCustomAmount] = useState('')
   const [selectedAmount, setSelectedAmount] = useState(100)
@@ -173,7 +175,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
     setMessage('')
 
     try {
-      const orderResponse = await fetch('http://localhost:5000/api/create-payment-order', {
+      const orderResponse = await fetch(`${API_URL}/api/create-payment-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -199,7 +201,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         order_id: orderData.orderId,
         handler: async function (response) {
           try {
-            const verificationResponse = await fetch('http://localhost:5000/api/verify-payment', {
+            const verificationResponse = await fetch(`${API_URL}/api/verify-payment`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -488,7 +490,7 @@ function MeetingLinksButtons({ messageId, user }) {
   useEffect(() => {
     const checkMeetingLinks = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/messages/${messageId}`)
+        const response = await fetch(`${API_URL}/api/messages/${messageId}`)
         if (response.ok) {
           const messageData = await response.json()
           setMeetingLinks(messageData.meetingLinks)
@@ -514,7 +516,7 @@ function MeetingLinksButtons({ messageId, user }) {
     setLoading(true)
     try {
       const token = localStorage.getItem('userToken')
-      const response = await fetch(`http://localhost:5000/api/messages/${messageId}/user-meeting-links`, {
+      const response = await fetch(`${API_URL}/api/messages/${messageId}/user-meeting-links`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -709,7 +711,7 @@ function SimplifiedUserInterface({ user }) {
     if (confirm('Are you sure you want to end this counseling session?')) {
       try {
         const token = localStorage.getItem('userToken')
-        const response = await fetch(`http://localhost:5000/api/messages/${messageId}/user-complete`, {
+        const response = await fetch(`${API_URL}/api/messages/${messageId}/user-complete`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -721,9 +723,8 @@ function SimplifiedUserInterface({ user }) {
           setUserCompletedSession(true)
           setSessionStatus('completed')
           setShowChat(false)
-          setShowRating(true)  // Show rating before payment
+          setShowRating(true)
           
-          // Emit to admin that user completed the session
           if (socket) {
             socket.emit('user-completed-session', {
               messageId: messageId,
@@ -744,7 +745,7 @@ function SimplifiedUserInterface({ user }) {
   const handleRatingSubmit = async (rating, feedback) => {
     try {
       const token = localStorage.getItem('userToken')
-      const response = await fetch(`http://localhost:5000/api/messages/${messageId}/rating`, {
+      const response = await fetch(`${API_URL}/api/messages/${messageId}/rating`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -757,7 +758,6 @@ function SimplifiedUserInterface({ user }) {
       })
 
       if (response.ok) {
-        // After rating, show payment option
         setTimeout(() => {
           setShowRating(false)
           setShowPayment(true)
@@ -770,7 +770,7 @@ function SimplifiedUserInterface({ user }) {
 
   useEffect(() => {
     if (messageId && user) {
-      const newSocket = io('http://localhost:5000', {
+      const newSocket = io(API_URL, {
         transports: ['websocket', 'polling']
       })
       setSocket(newSocket)
@@ -786,7 +786,6 @@ function SimplifiedUserInterface({ user }) {
           
           switch(data.status) {
             case 'in-chat':
-              // Don't need to show chat here anymore - it's already shown
               fetchChatMessages()
               break
             case 'completed':
@@ -831,7 +830,6 @@ function SimplifiedUserInterface({ user }) {
   }, [messageId, user])
 
   useEffect(() => {
-    // Check for existing user messages
     if (user) {
       fetchUserMessages()
     }
@@ -840,7 +838,7 @@ function SimplifiedUserInterface({ user }) {
   const fetchUserMessages = async () => {
     try {
       const token = localStorage.getItem('userToken')
-      const response = await fetch('http://localhost:5000/api/user/messages', {
+      const response = await fetch(`${API_URL}/api/user/messages`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -849,16 +847,13 @@ function SimplifiedUserInterface({ user }) {
       if (response.ok) {
         const messages = await response.json()
         if (messages.length > 0) {
-          // Get the most recent message
           const latestMessage = messages[0]
           setMessageId(latestMessage._id)
           setSubmitted(true)
           
-          // Set appropriate UI state - ALWAYS show chat for existing messages
           if (latestMessage.status === 'completed') {
             setShowPayment(true)
           } else {
-            // Show chat for pending, in-chat, or in-call status
             setShowChat(true)
           }
         }
@@ -870,19 +865,17 @@ function SimplifiedUserInterface({ user }) {
 
   const fetchMessageData = async (msgId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/messages/${msgId}`)
+      const response = await fetch(`${API_URL}/api/messages/${msgId}`)
       if (response.ok) {
         const messageData = await response.json()
         
         setSessionStatus(messageData.status)
         setChatMessages(messageData.chatMessages || [])
         
-        // Only show payment if status is completed, otherwise show chat
         if (messageData.status === 'completed') {
           setShowChat(false)
           setShowPayment(true)
         } else {
-          // Show chat for any other status (pending, in-chat, in-call)
           setShowChat(true)
           setShowPayment(false)
         }
@@ -904,7 +897,7 @@ function SimplifiedUserInterface({ user }) {
     if (!messageId) return
     
     try {
-      const response = await fetch(`http://localhost:5000/api/messages/${messageId}`)
+      const response = await fetch(`${API_URL}/api/messages/${messageId}`)
       if (response.ok) {
         const messageData = await response.json()
         setChatMessages(messageData.chatMessages || [])
@@ -938,7 +931,7 @@ function SimplifiedUserInterface({ user }) {
     if (message.trim() && user) {
       try {
         const token = localStorage.getItem('userToken')
-        const response = await fetch('http://localhost:5000/api/messages', {
+        const response = await fetch(`${API_URL}/api/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -954,7 +947,6 @@ function SimplifiedUserInterface({ user }) {
           
           setMessageId(result.id)
           setSubmitted(true)
-          // IMMEDIATELY show chat interface after submitting message
           setShowChat(true)
           setSessionStatus('pending')
         } else {
@@ -1058,10 +1050,8 @@ function SimplifiedUserInterface({ user }) {
     />
   }
 
-  // UPDATED: Show chat immediately after message submission
+  // Show chat immediately after message submission
   if (showChat && messageId) {
-    const originalMessage = chatMessages.length > 0 ? chatMessages[0] : null
-
     return (
       <div style={{
         minHeight: '100vh',
@@ -1113,8 +1103,7 @@ function SimplifiedUserInterface({ user }) {
                 <MeetingLinksButtons messageId={messageId} user={user} />
               </div>
               
-                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                {/* End Session Button */}
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <button
                   onClick={handleUserCompleteSession}
                   disabled={userCompletedSession || sessionStatus === 'completed'}
@@ -1126,16 +1115,12 @@ function SimplifiedUserInterface({ user }) {
                     borderRadius: '0.375rem',
                     cursor: userCompletedSession || sessionStatus === 'completed' ? 'not-allowed' : 'pointer',
                     fontSize: '0.875rem',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
+                    fontWeight: '500'
                   }}
                 >
-                  {userCompletedSession || sessionStatus === 'completed' ? '✓ Session Ended' : '🏁 End Session'}
+                  {userCompletedSession || sessionStatus === 'completed' ? '✓ Session Ended' : 'End Session'}
                 </button>
 
-                {/* Quick payment buttons */}
                 <div style={{ display: 'flex', gap: '0.25rem' }}>
                   {[50, 100, 200].map(amount => (
                     <button
@@ -1143,7 +1128,7 @@ function SimplifiedUserInterface({ user }) {
                       onClick={async () => {
                         if (confirm(`Make a quick payment of ₹${amount}?`)) {
                           try {
-                            const orderResponse = await fetch('http://localhost:5000/api/create-payment-order', {
+                            const orderResponse = await fetch(`${API_URL}/api/create-payment-order`, {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ amount: amount, messageId: messageId })
@@ -1161,7 +1146,7 @@ function SimplifiedUserInterface({ user }) {
                                 order_id: orderData.orderId,
                                 handler: async function (response) {
                                   try {
-                                    const verificationResponse = await fetch('http://localhost:5000/api/verify-payment', {
+                                    const verificationResponse = await fetch(`${API_URL}/api/verify-payment`, {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({
@@ -1219,10 +1204,7 @@ function SimplifiedUserInterface({ user }) {
                     borderRadius: '0.375rem',
                     cursor: 'pointer',
                     fontSize: '0.875rem',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
+                    fontWeight: '500'
                   }}
                 >
                   More Options
@@ -1315,7 +1297,6 @@ function SimplifiedUserInterface({ user }) {
             flexDirection: 'column',
             gap: '1rem'
           }}>
-            {/* Show status message for pending sessions */}
             {sessionStatus === 'pending' && chatMessages.length === 1 && (
               <div style={{
                 textAlign: 'center',
@@ -1324,12 +1305,7 @@ function SimplifiedUserInterface({ user }) {
                 borderRadius: '0.5rem',
                 border: '1px solid #fbbf24'
               }}>
-                <div style={{
-                  fontSize: '2rem',
-                  marginBottom: '1rem'
-                }}>
-                  ⏳
-                </div>
+                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
                 <div style={{
                   color: '#92400e',
                   fontWeight: '600',
@@ -1393,7 +1369,6 @@ function SimplifiedUserInterface({ user }) {
             )}
           </div>
 
-          {/* Payment section - available during active sessions */}
           {sessionStatus !== 'completed' && (
             <div style={{
               padding: '1rem 2rem',
@@ -1461,6 +1436,7 @@ function SimplifiedUserInterface({ user }) {
               </div>
             </div>
           )}
+
           {sessionStatus !== 'completed' && (
             <div style={{
               padding: '1rem 2rem',
@@ -1512,7 +1488,6 @@ function SimplifiedUserInterface({ user }) {
             </div>
           )}
 
-          {/* Session completed banner */}
           {sessionStatus === 'completed' && (
             <div style={{
               padding: '1rem 2rem',

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import io from 'socket.io-client'
 
+// Get API URL from environment variables
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 function AdminDashboard({ user, onLogout }) {
   const [messages, setMessages] = useState([])
   const [status, setStatus] = useState('offline')
@@ -16,7 +19,7 @@ function AdminDashboard({ user, onLogout }) {
 
   // Socket connection setup
   useEffect(() => {
-    const newSocket = io('http://localhost:5000')
+    const newSocket = io(API_URL)
     setSocket(newSocket)
 
     newSocket.on('connect', () => {
@@ -97,7 +100,7 @@ function AdminDashboard({ user, onLogout }) {
         return
       }
 
-      const response = await fetch('http://localhost:5000/api/messages', {
+      const response = await fetch(`${API_URL}/api/messages`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
@@ -116,7 +119,7 @@ function AdminDashboard({ user, onLogout }) {
 
   const startChatSession = async (messageId) => {
     setActiveChat(messageId)
-    const response = await fetch(`http://localhost:5000/api/messages/${messageId}`)
+    const response = await fetch(`${API_URL}/api/messages/${messageId}`)
     if (response.ok) {
       const messageData = await response.json()
       setChatMessages(messageData.chatMessages || [])
@@ -127,7 +130,7 @@ function AdminDashboard({ user, onLogout }) {
   const updateMessageStatus = async (messageId, newStatus) => {
     try {
       const token = localStorage.getItem('adminToken')
-      const response = await fetch(`http://localhost:5000/api/messages/${messageId}/status`, {
+      const response = await fetch(`${API_URL}/api/messages/${messageId}/status`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -168,7 +171,7 @@ function AdminDashboard({ user, onLogout }) {
   const setMeetingLinksForMessage = async (messageId) => {
     try {
       const token = localStorage.getItem('adminToken')
-      const response = await fetch(`http://localhost:5000/api/messages/${messageId}/meeting-links`, {
+      const response = await fetch(`${API_URL}/api/messages/${messageId}/meeting-links`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
