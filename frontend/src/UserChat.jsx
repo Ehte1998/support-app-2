@@ -756,50 +756,47 @@ function MeetingLinksButtons({ messageId, user }) {
 
   return (
     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-      {/* Admin-set links */}
-      {meetingLinks?.googleMeet && (
-        <button
-          onClick={() => {
-            console.log('Opening admin Google Meet:', meetingLinks.googleMeet)
-            window.open(meetingLinks.googleMeet, '_blank')
-          }}
-          style={{
-            padding: '0.5rem 0.75rem',
-            background: '#10b981',
-            color: 'white',
-            border: 'none',
-            borderRadius: '0.375rem',
-            cursor: 'pointer',
-            fontWeight: '500',
-            fontSize: '0.875rem'
-          }}
-        >
-          Join Google Meet (Counselor)
-        </button>
-      )}
+      {/* Static Google Meet Landing Page */}
+      <button
+        onClick={() => {
+          console.log('Opening Google Meet landing page')
+          window.open('https://meet.google.com/landing', '_blank')
+        }}
+        style={{
+          padding: '0.5rem 0.75rem',
+          background: '#10b981',
+          color: 'white',
+          border: 'none',
+          borderRadius: '0.375rem',
+          cursor: 'pointer',
+          fontWeight: '500',
+          fontSize: '0.875rem'
+        }}
+      >
+        Start Google Meet
+      </button>
       
-      {meetingLinks?.zoom && (
-        <button
-          onClick={() => {
-            console.log('Opening admin Zoom:', meetingLinks.zoom)
-            window.open(meetingLinks.zoom, '_blank')
-          }}
-          style={{
-            padding: '0.5rem 0.75rem',
-            background: '#2563eb',
-            color: 'white',
-            border: 'none',
-            borderRadius: '0.375rem',
-            cursor: 'pointer',
-            fontWeight: '500',
-            fontSize: '0.875rem'
-          }}
-        >
-          Join Zoom (Counselor)
-        </button>
-      )}
+      {/* Static Zoom Landing Page */}
+      <button
+        onClick={() => {
+          console.log('Opening Zoom landing page')
+          window.open('https://zoom.us/', '_blank')
+        }}
+        style={{
+          padding: '0.5rem 0.75rem',
+          background: '#2563eb',
+          color: 'white',
+          border: 'none',
+          borderRadius: '0.375rem',
+          cursor: 'pointer',
+          fontWeight: '500',
+          fontSize: '0.875rem'
+        }}
+      >
+        Start Zoom Meeting
+      </button>
 
-      {/* User-set links */}
+      {/* User-set links (keep existing functionality) */}
       {meetingLinks?.userGoogleMeet && (
         <button
           onClick={() => {
@@ -842,13 +839,6 @@ function MeetingLinksButtons({ messageId, user }) {
         </button>
       )}
       
-      {/* Show message when no links available */}
-      {(!meetingLinks || (!meetingLinks.googleMeet && !meetingLinks.zoom && !meetingLinks.userGoogleMeet && !meetingLinks.userZoom)) && (
-        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-          No video call links available yet
-        </div>
-      )}
-      
       {/* Set My Links button */}
       <button
         onClick={() => {
@@ -870,20 +860,10 @@ function MeetingLinksButtons({ messageId, user }) {
         + Set My Links
       </button>
 
-      {/* Debug info - remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{
-          fontSize: '0.6rem',
-          color: '#6b7280',
-          padding: '0.25rem',
-          background: '#f9fafb',
-          borderRadius: '0.25rem',
-          border: '1px solid #e5e7eb',
-          maxWidth: '200px'
-        }}>
-          Debug: Links={JSON.stringify(meetingLinks)} | ID={messageId?.slice(-6)}
-        </div>
-      )}
+      {/* Helpful text */}
+      <div style={{ fontSize: '0.75rem', color: '#6b7280', fontStyle: 'italic' }}>
+        Click buttons to start video calls or set your custom links
+      </div>
     </div>
   )
 }
