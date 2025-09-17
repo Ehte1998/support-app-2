@@ -482,14 +482,15 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 
 // Meeting Links Component with Authentication
 // Fixed MeetingLinksButtons Component with proper debugging
+// Updated MeetingLinksButtons Component with Landing Page URLs
 function MeetingLinksButtons({ messageId, user }) {
   const [meetingLinks, setMeetingLinks] = useState({})
-  const [showLinkForm, setShowLinkForm] = useState(false) // Ensure this starts as false
+  const [showLinkForm, setShowLinkForm] = useState(false)
   const [userLinks, setUserLinks] = useState({ googleMeet: '', zoom: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Simplified fetch - remove if causing issues
+  // Fetch meeting links on component mount
   useEffect(() => {
     const checkMeetingLinks = async () => {
       try {
@@ -502,7 +503,6 @@ function MeetingLinksButtons({ messageId, user }) {
         }
       } catch (error) {
         console.error('Error fetching meeting links:', error)
-        // Don't set error state to avoid interference
       }
     }
 
@@ -541,7 +541,7 @@ function MeetingLinksButtons({ messageId, user }) {
       if (response.ok) {
         const result = await response.json()
         setMeetingLinks(result.meetingLinks || {})
-        setShowLinkForm(false) // Close form on success
+        setShowLinkForm(false)
         setUserLinks({ googleMeet: '', zoom: '' })
         setError('')
       } else {
@@ -564,9 +564,6 @@ function MeetingLinksButtons({ messageId, user }) {
     setShowLinkForm(true)
     setError('')
   }
-
-  // Log current state for debugging
-  console.log('MeetingLinksButtons state:', { showLinkForm, loading, messageId })
 
   // FORM VIEW - Only show if explicitly opened
   if (showLinkForm === true) {
@@ -606,7 +603,7 @@ function MeetingLinksButtons({ messageId, user }) {
             type="url"
             value={userLinks.googleMeet}
             onChange={(e) => setUserLinks(prev => ({ ...prev, googleMeet: e.target.value }))}
-            placeholder="Google Meet link (optional)"
+            placeholder="Your Google Meet link (optional)"
             disabled={loading}
             style={{
               width: '100%',
@@ -621,7 +618,7 @@ function MeetingLinksButtons({ messageId, user }) {
             type="url"
             value={userLinks.zoom}
             onChange={(e) => setUserLinks(prev => ({ ...prev, zoom: e.target.value }))}
-            placeholder="Zoom link (optional)"
+            placeholder="Your Zoom link (optional)"
             disabled={loading}
             style={{
               width: '100%',
@@ -670,14 +667,14 @@ function MeetingLinksButtons({ messageId, user }) {
     )
   }
 
-  // BUTTONS VIEW - Default view with static links
+  // BUTTONS VIEW - Default view with static and custom links
   return (
     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-      {/* Static Google Meet Button - Always Available */}
+      {/* Static Google Meet Button - Always Available with Landing Page */}
       <button
         onClick={() => {
-          console.log('Opening Google Meet')
-          window.open('https://meet.google.com/', '_blank')
+          console.log('Opening Google Meet Landing Page')
+          window.open('https://meet.google.com/landing', '_blank')
         }}
         style={{
           padding: '0.5rem 0.75rem',
@@ -690,13 +687,13 @@ function MeetingLinksButtons({ messageId, user }) {
           fontSize: '0.875rem'
         }}
       >
-        🎥 Start Google Meet
+        📱 Google Meet
       </button>
       
-      {/* Static Zoom Button - Always Available */}
+      {/* Static Zoom Button - Always Available with Landing Page */}
       <button
         onClick={() => {
-          console.log('Opening Zoom')
+          console.log('Opening Zoom Landing Page')
           window.open('https://zoom.us/start/videomeeting', '_blank')
         }}
         style={{
@@ -710,7 +707,7 @@ function MeetingLinksButtons({ messageId, user }) {
           fontSize: '0.875rem'
         }}
       >
-        🎥 Start Zoom Call
+        📱 Zoom
       </button>
 
       {/* User's Custom Google Meet Link */}
