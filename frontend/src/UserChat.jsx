@@ -481,42 +481,85 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 }
 
 // Meeting Links Component with Authentication
+// Fixed MeetingLinksButtons Component with proper debugging
 function MeetingLinksButtons({ messageId, user }) {
   const [meetingLinks, setMeetingLinks] = useState(null)
   const [showLinkForm, setShowLinkForm] = useState(false)
   const [userLinks, setUserLinks] = useState({ googleMeet: '', zoom: '' })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
+  // Fetch meeting links on component mount and periodically
   useEffect(() => {
     const checkMeetingLinks = async () => {
       try {
+        console.log('Fetching meeting links for message:', messageId)
         const response = await fetch(`${API_URL}/api/messages/${messageId}`)
+        
         if (response.ok) {
           const messageData = await response.json()
-          console.log('Fetched meeting links:', messageData.meetingLinks) // Debug log
+          console.log('Message data received:', messageData)
+          console.log('Meeting links from server:', messageData.meetingLinks)
+          
           setMeetingLinks(messageData.meetingLinks || {})
+        } else {
+          console.error('Failed to fetch message data:', response.status)
         }
       } catch (error) {
         console.error('Error fetching meeting links:', error)
+        setError('Failed to load meeting links')
       }
     }
 
     if (messageId) {
       checkMeetingLinks()
-      const interval = setInterval(checkMeetingLinks, 5000)
+      
+      // Check for updates every 10 seconds
+      const interval = setInterval(checkMeetingLinks, 10000)
       return () => clearInterval(interval)
     }
   }, [messageId])
 
   const handleSetUserLinks = async () => {
-    if (!userLinks.googleMeet && !userLinks.zoom) {
-      alert('Please enter at least one meeting link')
+    console.log('Setting user links:', userLinks)
+    
+    if (!userLinks.googleMeet.trim() && !userLinks.zoom.trim()) {
+      setError('Please enter at least one meeting link')
+      return
+    }
+
+    // Basic URL validation
+    const isValidUrl = (url) => {
+      try {
+        new URL(url)
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    if (userLinks.googleMeet.trim() && !isValidUrl(userLinks.googleMeet.trim())) {
+      setError('Please enter a valid Google Meet URL')
+      return
+    }
+
+    if (userLinks.zoom.trim() && !isValidUrl(userLinks.zoom.trim())) {
+      setError('Please enter a valid Zoom URL')
       return
     }
 
     setLoading(true)
+    setError('')
+    
     try {
       const token = localStorage.getItem('userToken')
+      console.log('Token available:', !!token)
+      
+      if (!token) {
+        setError('Authentication required. Please log in again.')
+        return
+      }
+
       const response = await fetch(`${API_URL}/api/messages/${messageId}/user-meeting-links`, {
         method: 'PATCH',
         headers: {
@@ -524,39 +567,59 @@ function MeetingLinksButtons({ messageId, user }) {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          googleMeet: userLinks.googleMeet,
-          zoom: userLinks.zoom
+          googleMeet: userLinks.googleMeet.trim(),
+          zoom: userLinks.zoom.trim()
         })
       })
 
+      console.log('Set links response status:', response.status)
+      
       if (response.ok) {
         const result = await response.json()
-        console.log('User links set response:', result) // Debug log
+        console.log('Set links response:', result)
+        
+        // Update local state immediately
         setMeetingLinks(result.meetingLinks || {})
         setShowLinkForm(false)
         setUserLinks({ googleMeet: '', zoom: '' })
-        alert('Meeting links set successfully!')
+        setError('')
         
-        // Force refresh the links
-        setTimeout(() => {
-          fetch(`${API_URL}/api/messages/${messageId}`)
-            .then(res => res.json())
-            .then(data => {
-              console.log('Refreshed meeting links:', data.meetingLinks) // Debug log
-              setMeetingLinks(data.meetingLinks || {})
-            })
+        // Force refresh after a short delay
+        setTimeout(async () => {
+          try {
+            const refreshResponse = await fetch(`${API_URL}/api/messages/${messageId}`)
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json()
+              console.log('Refreshed meeting links:', refreshData.meetingLinks)
+              setMeetingLinks(refreshData.meetingLinks || {})
+            }
+          } catch (err) {
+            console.error('Error refreshing data:', err)
+          }
         }, 1000)
+        
       } else {
         const errorData = await response.json()
-        alert('Failed to set meeting links: ' + (errorData.error || 'Unknown error'))
+        console.error('Server error:', errorData)
+        setError(errorData.error || 'Failed to set meeting links')
       }
     } catch (error) {
-      console.error('Error setting user meeting links:', error)
-      alert('Error setting meeting links')
+      console.error('Network error setting user meeting links:', error)
+      setError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
   }
+
+  // Debug component state
+  console.log('MeetingLinksButtons render:', {
+    messageId,
+    meetingLinks,
+    showLinkForm,
+    userLinks,
+    loading,
+    error
+  })
 
   if (showLinkForm) {
     return (
@@ -564,40 +627,88 @@ function MeetingLinksButtons({ messageId, user }) {
         padding: '1rem', 
         background: '#f9fafb', 
         borderRadius: '0.5rem',
-        border: '1px solid #e5e7eb'
+        border: '1px solid #e5e7eb',
+        width: '100%'
       }}>
-        <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.875rem', fontWeight: '600' }}>
+        <h4 style={{ 
+          margin: '0 0 1rem 0', 
+          fontSize: '0.875rem', 
+          fontWeight: '600',
+          color: '#374151'
+        }}>
           Set Your Meeting Links
         </h4>
         
+        {error && (
+          <div style={{
+            padding: '0.5rem',
+            background: '#fef2f2',
+            color: '#991b1b',
+            border: '1px solid #fecaca',
+            borderRadius: '0.25rem',
+            fontSize: '0.75rem',
+            marginBottom: '0.75rem'
+          }}>
+            {error}
+          </div>
+        )}
+        
         <div style={{ marginBottom: '0.75rem' }}>
+          <label style={{
+            display: 'block',
+            fontSize: '0.75rem',
+            fontWeight: '500',
+            color: '#374151',
+            marginBottom: '0.25rem'
+          }}>
+            Google Meet URL:
+          </label>
           <input
             type="url"
             value={userLinks.googleMeet}
-            onChange={(e) => setUserLinks(prev => ({ ...prev, googleMeet: e.target.value }))}
-            placeholder="Google Meet link (optional)"
+            onChange={(e) => {
+              setUserLinks(prev => ({ ...prev, googleMeet: e.target.value }))
+              setError('')
+            }}
+            placeholder="https://meet.google.com/your-meeting-id"
+            disabled={loading}
             style={{
               width: '100%',
               padding: '0.5rem',
               border: '1px solid #d1d5db',
               borderRadius: '0.25rem',
-              fontSize: '0.75rem'
+              fontSize: '0.75rem',
+              opacity: loading ? 0.6 : 1
             }}
           />
         </div>
         
         <div style={{ marginBottom: '0.75rem' }}>
+          <label style={{
+            display: 'block',
+            fontSize: '0.75rem',
+            fontWeight: '500',
+            color: '#374151',
+            marginBottom: '0.25rem'
+          }}>
+            Zoom URL:
+          </label>
           <input
             type="url"
             value={userLinks.zoom}
-            onChange={(e) => setUserLinks(prev => ({ ...prev, zoom: e.target.value }))}
-            placeholder="Zoom link (optional)"
+            onChange={(e) => {
+              setUserLinks(prev => ({ ...prev, zoom: e.target.value }))
+              setError('')
+            }}
+            placeholder="https://zoom.us/j/your-meeting-id"
+            disabled={loading}
             style={{
               width: '100%',
               padding: '0.5rem',
               border: '1px solid #d1d5db',
               borderRadius: '0.25rem',
-              fontSize: '0.75rem'
+              fontSize: '0.75rem',
+              opacity: loading ? 0.6 : 1
             }}
           />
         </div>
@@ -605,14 +716,14 @@ function MeetingLinksButtons({ messageId, user }) {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
             onClick={handleSetUserLinks}
-            disabled={loading}
+            disabled={loading || (!userLinks.googleMeet.trim() && !userLinks.zoom.trim())}
             style={{
               padding: '0.5rem 0.75rem',
-              background: loading ? '#d1d5db' : '#3b82f6',
+              background: (loading || (!userLinks.googleMeet.trim() && !userLinks.zoom.trim())) ? '#d1d5db' : '#3b82f6',
               color: 'white',
               border: 'none',
               borderRadius: '0.25rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
+              cursor: (loading || (!userLinks.googleMeet.trim() && !userLinks.zoom.trim())) ? 'not-allowed' : 'pointer',
               fontSize: '0.75rem',
               fontWeight: '500'
             }}
@@ -623,14 +734,16 @@ function MeetingLinksButtons({ messageId, user }) {
             onClick={() => {
               setShowLinkForm(false)
               setUserLinks({ googleMeet: '', zoom: '' })
+              setError('')
             }}
+            disabled={loading}
             style={{
               padding: '0.5rem 0.75rem',
               background: '#6b7280',
               color: 'white',
               border: 'none',
               borderRadius: '0.25rem',
-              cursor: 'pointer',
+              cursor: loading ? 'not-allowed' : 'pointer',
               fontSize: '0.75rem'
             }}
           >
@@ -643,10 +756,13 @@ function MeetingLinksButtons({ messageId, user }) {
 
   return (
     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-      {/* Show Admin-set links */}
-      {meetingLinks && meetingLinks.googleMeet && (
+      {/* Admin-set links */}
+      {meetingLinks?.googleMeet && (
         <button
-          onClick={() => window.open(meetingLinks.googleMeet, '_blank')}
+          onClick={() => {
+            console.log('Opening admin Google Meet:', meetingLinks.googleMeet)
+            window.open(meetingLinks.googleMeet, '_blank')
+          }}
           style={{
             padding: '0.5rem 0.75rem',
             background: '#10b981',
@@ -662,9 +778,12 @@ function MeetingLinksButtons({ messageId, user }) {
         </button>
       )}
       
-      {meetingLinks && meetingLinks.zoom && (
+      {meetingLinks?.zoom && (
         <button
-          onClick={() => window.open(meetingLinks.zoom, '_blank')}
+          onClick={() => {
+            console.log('Opening admin Zoom:', meetingLinks.zoom)
+            window.open(meetingLinks.zoom, '_blank')
+          }}
           style={{
             padding: '0.5rem 0.75rem',
             background: '#2563eb',
@@ -680,10 +799,13 @@ function MeetingLinksButtons({ messageId, user }) {
         </button>
       )}
 
-      {/* Show User-set links */}
-      {meetingLinks && meetingLinks.userGoogleMeet && (
+      {/* User-set links */}
+      {meetingLinks?.userGoogleMeet && (
         <button
-          onClick={() => window.open(meetingLinks.userGoogleMeet, '_blank')}
+          onClick={() => {
+            console.log('Opening user Google Meet:', meetingLinks.userGoogleMeet)
+            window.open(meetingLinks.userGoogleMeet, '_blank')
+          }}
           style={{
             padding: '0.5rem 0.75rem',
             background: '#059669',
@@ -699,9 +821,12 @@ function MeetingLinksButtons({ messageId, user }) {
         </button>
       )}
       
-      {meetingLinks && meetingLinks.userZoom && (
+      {meetingLinks?.userZoom && (
         <button
-          onClick={() => window.open(meetingLinks.userZoom, '_blank')}
+          onClick={() => {
+            console.log('Opening user Zoom:', meetingLinks.userZoom)
+            window.open(meetingLinks.userZoom, '_blank')
+          }}
           style={{
             padding: '0.5rem 0.75rem',
             background: '#1d4ed8',
@@ -724,8 +849,13 @@ function MeetingLinksButtons({ messageId, user }) {
         </div>
       )}
       
+      {/* Set My Links button */}
       <button
-        onClick={() => setShowLinkForm(true)}
+        onClick={() => {
+          console.log('Opening link form')
+          setShowLinkForm(true)
+          setError('')
+        }}
         style={{
           padding: '0.4rem 0.6rem',
           background: '#f3f4f6',
@@ -739,6 +869,21 @@ function MeetingLinksButtons({ messageId, user }) {
       >
         + Set My Links
       </button>
+
+      {/* Debug info - remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{
+          fontSize: '0.6rem',
+          color: '#6b7280',
+          padding: '0.25rem',
+          background: '#f9fafb',
+          borderRadius: '0.25rem',
+          border: '1px solid #e5e7eb',
+          maxWidth: '200px'
+        }}>
+          Debug: Links={JSON.stringify(meetingLinks)} | ID={messageId?.slice(-6)}
+        </div>
+      )}
     </div>
   )
 }
