@@ -16,6 +16,11 @@ function AdminDashboard({ user, onLogout }) {
   const [activeChat, setActiveChat] = useState(null)
   const [chatMessages, setChatMessages] = useState([])
   const [newChatMessage, setNewChatMessage] = useState('')
+  
+  // Delete functionality state
+  const [selectedMessages, setSelectedMessages] = useState([])
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [bulkDeleteMode, setBulkDeleteMode] = useState(false)
 
   // Socket connection setup
   useEffect(() => {
@@ -115,6 +120,70 @@ function AdminDashboard({ user, onLogout }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Delete functionality
+  const deleteMessage = async (messageId) => {
+    try {
+      const token = localStorage.getItem('adminToken')
+      const response = await fetch(`${API_URL}/api/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+
+      if (response.ok) {
+        setMessages(prev => prev.filter(msg => msg._id !== messageId))
+        setNotification({
+          type: 'delete',
+          message: 'Conversation deleted successfully',
+          timestamp: Date.now()
+        })
+      } else {
+        alert('Failed to delete conversation')
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error)
+      alert('Error deleting conversation')
+    }
+  }
+
+  const bulkDeleteMessages = async () => {
+    try {
+      const token = localStorage.getItem('adminToken')
+      const response = await fetch(`${API_URL}/api/messages/bulk-delete`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ messageIds: selectedMessages })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setMessages(prev => prev.filter(msg => !selectedMessages.includes(msg._id)))
+        setSelectedMessages([])
+        setBulkDeleteMode(false)
+        setNotification({
+          type: 'delete',
+          message: `${result.deletedCount} conversations deleted`,
+          timestamp: Date.now()
+        })
+      } else {
+        alert('Failed to delete conversations')
+      }
+    } catch (error) {
+      console.error('Error bulk deleting:', error)
+      alert('Error deleting conversations')
+    }
+  }
+
+  const toggleMessageSelection = (messageId) => {
+    setSelectedMessages(prev => 
+      prev.includes(messageId) 
+        ? prev.filter(id => id !== messageId)
+        : [...prev, messageId]
+    )
   }
 
   const startChatSession = async (messageId) => {
@@ -413,7 +482,8 @@ function AdminDashboard({ user, onLogout }) {
           right: '1rem',
           background: notification.type === 'new_message' ? '#10b981' : 
                      notification.type === 'payment' ? '#8b5cf6' : 
-                     notification.type === 'rating' ? '#c026d3' : '#3b82f6',
+                     notification.type === 'rating' ? '#c026d3' : 
+                     notification.type === 'delete' ? '#ef4444' : '#3b82f6',
           color: 'white',
           padding: '1rem 1.5rem',
           borderRadius: '0.5rem',
@@ -524,6 +594,69 @@ function AdminDashboard({ user, onLogout }) {
                 }}
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '2rem',
+            borderRadius: '1rem',
+            maxWidth: '400px',
+            width: '90%'
+          }}>
+            <h3 style={{ margin: '0 0 1rem 0', color: '#dc2626' }}>
+              Confirm Deletion
+            </h3>
+            <p style={{ margin: '0 0 1.5rem 0' }}>
+              Are you sure you want to delete {selectedMessages.length} conversation(s)? 
+              This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{
+                  padding: '0.75rem 1rem',
+                  background: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  bulkDeleteMessages()
+                  setShowDeleteConfirm(false)
+                }}
+                style={{
+                  padding: '0.75rem 1rem',
+                  background: '#dc2626',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Delete
               </button>
             </div>
           </div>
@@ -650,6 +783,62 @@ function AdminDashboard({ user, onLogout }) {
             Refresh
           </button>
         </div>
+
+        {/* Bulk actions header */}
+        {messages.length > 0 && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginBottom: '1rem',
+            padding: '1rem',
+            background: '#f9fafb',
+            borderRadius: '0.5rem'
+          }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <button
+                onClick={() => {
+                  setBulkDeleteMode(!bulkDeleteMode)
+                  setSelectedMessages([])
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: bulkDeleteMode ? '#ef4444' : '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {bulkDeleteMode ? 'Cancel' : 'Bulk Delete'}
+              </button>
+              
+              {bulkDeleteMode && selectedMessages.length > 0 && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  Delete Selected ({selectedMessages.length})
+                </button>
+              )}
+            </div>
+            
+            {bulkDeleteMode && (
+              <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                Select conversations to delete
+              </div>
+            )}
+          </div>
+        )}
         
         {messages.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
@@ -665,11 +854,26 @@ function AdminDashboard({ user, onLogout }) {
                   border: '1px solid #e5e7eb',
                   borderRadius: '0.5rem',
                   padding: '1.5rem',
-                  background: message.status === 'pending' ? '#fffbeb' : 
-                             message.status === 'in-chat' ? '#fef7ff' :
-                             message.status === 'in-call' ? '#dbeafe' : 'white'
+                  background: selectedMessages.includes(message._id) 
+                    ? '#fef2f2' 
+                    : message.status === 'pending' ? '#fffbeb' : 
+                      message.status === 'in-chat' ? '#fef7ff' :
+                      message.status === 'in-call' ? '#dbeafe' : 'white',
+                  position: 'relative'
                 }}
               >
+                {/* Bulk select checkbox */}
+                {bulkDeleteMode && (
+                  <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedMessages.includes(message._id)}
+                      onChange={() => toggleMessageSelection(message._id)}
+                      style={{ transform: 'scale(1.2)' }}
+                    />
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                   <div>
                     <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '0.25rem', fontSize: '1.1rem' }}>
@@ -684,20 +888,44 @@ function AdminDashboard({ user, onLogout }) {
                       </div>
                     )}
                   </div>
-                  <span style={{
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '9999px',
-                    fontSize: '0.75rem',
-                    fontWeight: '500',
-                    background: message.status === 'pending' ? '#fef3c7' : 
-                               message.status === 'in-chat' ? '#fef7ff' :
-                               message.status === 'in-call' ? '#dbeafe' : '#dcfce7',
-                    color: message.status === 'pending' ? '#92400e' : 
-                           message.status === 'in-chat' ? '#a21caf' :
-                           message.status === 'in-call' ? '#1e40af' : '#15803d'
-                  }}>
-                    {message.status.toUpperCase()}
-                  </span>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span style={{
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.75rem',
+                      fontWeight: '500',
+                      background: message.status === 'pending' ? '#fef3c7' : 
+                                 message.status === 'in-chat' ? '#fef7ff' :
+                                 message.status === 'in-call' ? '#dbeafe' : '#dcfce7',
+                      color: message.status === 'pending' ? '#92400e' : 
+                             message.status === 'in-chat' ? '#a21caf' :
+                             message.status === 'in-call' ? '#1e40af' : '#15803d'
+                    }}>
+                      {message.status.toUpperCase()}
+                    </span>
+                    
+                    {/* Individual delete button */}
+                    {!bulkDeleteMode && (
+                      <button
+                        onClick={() => {
+                          if (confirm('Are you sure you want to delete this conversation? This action cannot be undone.')) {
+                            deleteMessage(message._id)
+                          }
+                        }}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '0.25rem',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        🗑️ Delete
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{ 
