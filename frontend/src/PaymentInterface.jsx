@@ -9,7 +9,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
-  const predefinedAmounts = [50, 100, 200, 500, 1000]
+  const predefinedAmounts = [500, 1000, 2000, 5000, 10000]
 
   // Load Razorpay script
   useEffect(() => {
