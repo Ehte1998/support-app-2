@@ -1,9 +1,392 @@
-// Updated UserChat.jsx - Fixed quick payment buttons and Razorpay integration
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import io from 'socket.io-client'
 
 // Get API URL from environment variables
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+// File Upload Component
+function FileUploadComponent({ messageId, onUploadSuccess, onUploadError }) {
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [dragOver, setDragOver] = useState(false)
+  const [caption, setCaption] = useState('')
+
+  const handleFileSelect = (file) => {
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 
+                         'video/mp4', 'video/mov', 'video/avi', 'video/mkv', 'video/webm', 'video/3gp']
+    
+    if (!allowedTypes.includes(file.type)) {
+      onUploadError('Only image and video files are allowed')
+      return
+    }
+
+    // Validate file size (4GB)
+    const maxSize = 4 * 1024 * 1024 * 1024 // 4GB
+    if (file.size > maxSize) {
+      onUploadError('File size exceeds 4GB limit')
+      return
+    }
+
+    uploadFile(file)
+  }
+
+  const uploadFile = async (file) => {
+    setUploading(true)
+    setUploadProgress(0)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      if (caption.trim()) {
+        formData.append('caption', caption.trim())
+      }
+
+      const token = localStorage.getItem('userToken')
+
+      const xhr = new XMLHttpRequest()
+
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = Math.round((e.loaded / e.total) * 100)
+          setUploadProgress(progress)
+        }
+      })
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText)
+          onUploadSuccess(response.file)
+          setCaption('')
+        } else {
+          const error = JSON.parse(xhr.responseText)
+          onUploadError(error.error || 'Upload failed')
+        }
+        setUploading(false)
+        setUploadProgress(0)
+      })
+
+      xhr.addEventListener('error', () => {
+        onUploadError('Upload failed due to network error')
+        setUploading(false)
+        setUploadProgress(0)
+      })
+
+      xhr.open('POST', `${API_URL}/api/upload/${messageId}`)
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      xhr.send(formData)
+
+    } catch (error) {
+      console.error('Upload error:', error)
+      onUploadError('Upload failed')
+      setUploading(false)
+      setUploadProgress(0)
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setDragOver(false)
+    
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      handleFileSelect(files[0])
+    }
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setDragOver(true)
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    setDragOver(false)
+  }
+
+  if (uploading) {
+    return (
+      <div className="fade-in" style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        padding: '1rem',
+        margin: '0.5rem 0'
+      }}>
+        <div className="loading-spinner" style={{
+          width: '20px',
+          height: '20px',
+          border: '2px solid #e5e7eb',
+          borderTop: '2px solid #3b82f6',
+          borderRadius: '50%'
+        }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.25rem' }}>
+            Uploading... {uploadProgress}%
+          </div>
+          <div className="upload-progress">
+            <div 
+              className={`upload-progress-bar ${uploadProgress > 0 ? 'progress-bar-active' : ''}`}
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ margin: '0.5rem 0' }}>
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        className={`file-drop-area ${dragOver ? 'drag-over upload-area-active' : ''} button-hover`}
+      >
+        <input
+          type="file"
+          accept="image/*,video/*"
+          onChange={(e) => handleFileSelect(e.target.files[0])}
+          style={{ display: 'none' }}
+          id={`chat-file-input-${messageId}`}
+        />
+        
+        <label
+          htmlFor={`chat-file-input-${messageId}`}
+          style={{ cursor: 'pointer', width: '100%', display: 'block' }}
+        >
+          <div style={{
+            fontSize: '1.5rem',
+            marginBottom: '0.25rem',
+            color: dragOver ? '#3b82f6' : '#6b7280'
+          }}>
+            📎
+          </div>
+          <div style={{
+            fontSize: '0.75rem',
+            color: dragOver ? '#3b82f6' : '#374151',
+            fontWeight: '500',
+            marginBottom: '0.25rem'
+          }}>
+            {dragOver ? 'Drop file here' : 'Upload photo/video'}
+          </div>
+          <div style={{
+            fontSize: '0.625rem',
+            color: '#6b7280',
+            lineHeight: '1.2'
+          }}>
+            Max 4GB • JPG, PNG, GIF, MP4, MOV, etc.
+          </div>
+        </label>
+      </div>
+      
+      {/* Caption input */}
+      <input
+        type="text"
+        value={caption}
+        onChange={(e) => setCaption(e.target.value)}
+        placeholder="Add a caption (optional)"
+        style={{
+          width: '100%',
+          padding: '0.5rem',
+          border: '1px solid #d1d5db',
+          borderRadius: '0.375rem',
+          fontSize: '0.875rem',
+          marginTop: '0.5rem'
+        }}
+      />
+    </div>
+  )
+}
+
+// Media Message Component
+function MediaMessage({ message, isOwnMessage }) {
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
+  const [showFullscreen, setShowFullscreen] = useState(false)
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const handleDownload = () => {
+    if (message.file?.url) {
+      const link = document.createElement('a')
+      link.href = `${API_URL}${message.file.url}`
+      link.download = message.file.originalName || 'file'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+  }
+
+  const renderMedia = () => {
+    if (!message.file) return null
+
+    const fileUrl = `${API_URL}${message.file.url}`
+
+    if (message.messageType === 'image') {
+      return (
+        <div style={{ position: 'relative' }}>
+          {!imageLoaded && !imageError && (
+            <div style={{
+              width: '200px',
+              height: '150px',
+              background: '#f3f4f6',
+              borderRadius: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#6b7280',
+              fontSize: '0.875rem'
+            }}>
+              Loading image...
+            </div>
+          )}
+          
+          {imageError ? (
+            <div style={{
+              width: '200px',
+              height: '150px',
+              background: '#fef2f2',
+              borderRadius: '0.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#dc2626',
+              fontSize: '0.875rem',
+              textAlign: 'center'
+            }}>
+              <div>Image failed to load</div>
+              <button onClick={handleDownload} style={{
+                marginTop: '0.5rem',
+                padding: '0.25rem 0.5rem',
+                background: '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.25rem',
+                fontSize: '0.75rem',
+                cursor: 'pointer'
+              }}>
+                Download
+              </button>
+            </div>
+          ) : (
+            <img
+              src={fileUrl}
+              alt={message.file.originalName}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+              onClick={() => setShowFullscreen(true)}
+              style={{
+                maxWidth: '300px',
+                maxHeight: '200px',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                objectFit: 'cover',
+                display: imageLoaded ? 'block' : 'none'
+              }}
+            />
+          )}
+
+          {/* Fullscreen Modal */}
+          {showFullscreen && imageLoaded && !imageError && (
+            <div
+              className="fullscreen-modal"
+              onClick={() => setShowFullscreen(false)}
+            >
+              <img
+                src={fileUrl}
+                alt={message.file.originalName}
+                className="fullscreen-image"
+              />
+              <button
+                onClick={() => setShowFullscreen(false)}
+                className="fullscreen-close"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    if (message.messageType === 'video') {
+      return (
+        <div className="video-container">
+          <video
+            controls
+            className="video-player"
+            style={{
+              maxWidth: '300px',
+              maxHeight: '200px'
+            }}
+          >
+            <source src={fileUrl} type={message.file.mimetype} />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      )
+    }
+
+    return null
+  }
+
+  return (
+    <div>
+      {/* Render media */}
+      {renderMedia()}
+      
+      {/* Caption if exists */}
+      {message.message && (
+        <div style={{
+          marginTop: '0.5rem',
+          fontSize: '0.875rem',
+          lineHeight: '1.4'
+        }}>
+          {message.message}
+        </div>
+      )}
+      
+      {/* File info */}
+      <div style={{
+        marginTop: '0.5rem',
+        fontSize: '0.75rem',
+        opacity: 0.8,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        flexWrap: 'wrap'
+      }}>
+        <span>{message.file?.originalName}</span>
+        <span>•</span>
+        <span>{formatFileSize(message.file?.size)}</span>
+        <button
+          onClick={handleDownload}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: isOwnMessage ? 'rgba(255,255,255,0.8)' : '#6b7280',
+            cursor: 'pointer',
+            fontSize: '0.75rem',
+            textDecoration: 'underline'
+          }}
+        >
+          Download
+        </button>
+      </div>
+    </div>
+  )
+}
 
 // Rating Component
 function RatingComponent({ onRatingSubmit }) {
@@ -91,11 +474,11 @@ function RatingComponent({ onRatingSubmit }) {
         marginBottom: '1rem'
       }}>
         {rating === 0 ? 'Click a star to rate' :
-         rating === 1 ? 'Poor' :
-         rating === 2 ? 'Fair' :
-         rating === 3 ? 'Good' :
-         rating === 4 ? 'Very Good' :
-         'Excellent'}
+        rating === 1 ? 'Poor' :
+        rating === 2 ? 'Fair' :
+        rating === 3 ? 'Good' :
+        rating === 4 ? 'Very Good' :
+        'Excellent'}
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
@@ -343,11 +726,11 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             marginBottom: '1.5rem',
             textAlign: 'center',
             background: message.includes('successful') ? '#dcfce7' : 
-                       message.includes('failed') || message.includes('cancelled') ? '#fef2f2' : '#fef3c7',
+                      message.includes('failed') || message.includes('cancelled') ? '#fef2f2' : '#fef3c7',
             color: message.includes('successful') ? '#166534' : 
-                   message.includes('failed') || message.includes('cancelled') ? '#991b1b' : '#92400e',
+                  message.includes('failed') || message.includes('cancelled') ? '#991b1b' : '#92400e',
             border: `1px solid ${message.includes('successful') ? '#bbf7d0' : 
-                                 message.includes('failed') || message.includes('cancelled') ? '#fecaca' : '#fed7aa'}`
+                                message.includes('failed') || message.includes('cancelled') ? '#fecaca' : '#fed7aa'}`
           }}>
             {message}
           </div>
@@ -481,8 +864,6 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 }
 
 // Meeting Links Component with Authentication
-// Fixed MeetingLinksButtons Component with proper debugging
-// Updated MeetingLinksButtons Component with Landing Page URLs
 function MeetingLinksButtons({ messageId, user }) {
   const [meetingLinks, setMeetingLinks] = useState({})
   const [showLinkForm, setShowLinkForm] = useState(false)
@@ -774,83 +1155,7 @@ function MeetingLinksButtons({ messageId, user }) {
   )
 }
 
-// Quick Payment Function
-function makeQuickPayment(amount, messageId) {
-  return new Promise((resolve, reject) => {
-    // Load Razorpay script if not already loaded
-    if (!window.Razorpay) {
-      const script = document.createElement('script')
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-      script.onload = () => processPayment(amount, messageId, resolve, reject)
-      script.onerror = () => reject('Failed to load Razorpay')
-      document.head.appendChild(script)
-    } else {
-      processPayment(amount, messageId, resolve, reject)
-    }
-  })
-}
-
-async function processPayment(amount, messageId, resolve, reject) {
-  try {
-    const orderResponse = await fetch(`${API_URL}/api/create-payment-order`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: amount, messageId: messageId })
-    })
-
-    const orderData = await orderResponse.json()
-
-    if (!orderData.success) {
-      throw new Error(orderData.error || 'Failed to create payment order')
-    }
-
-    const options = {
-      key: orderData.keyId,
-      amount: orderData.amount,
-      currency: orderData.currency,
-      name: 'Support Counseling',
-      description: 'Thank you for supporting our counseling services',
-      order_id: orderData.orderId,
-      handler: async function (response) {
-        try {
-          const verificationResponse = await fetch(`${API_URL}/api/verify-payment`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              messageId: messageId,
-              amount: orderData.amount
-            })
-          })
-
-          const verificationData = await verificationResponse.json()
-          if (verificationData.success) {
-            resolve(`Payment of ₹${amount} successful! Thank you for your support.`)
-          } else {
-            reject('Payment verification failed. Please contact support.')
-          }
-        } catch (error) {
-          reject('Payment verification failed. Please contact support.')
-        }
-      },
-      modal: {
-        ondismiss: function() {
-          reject('Payment cancelled')
-        }
-      },
-      theme: { color: '#3b82f6' }
-    }
-
-    const rzp = new window.Razorpay(options)
-    rzp.open()
-  } catch (error) {
-    reject('Payment failed. Please try again.')
-  }
-}
-
-// Main User Interface Component with Immediate Chat Access
+// Main User Interface Component with Chat and File Upload
 function SimplifiedUserInterface({ user }) {
   const [message, setMessage] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -864,6 +1169,32 @@ function SimplifiedUserInterface({ user }) {
   const [newChatMessage, setNewChatMessage] = useState('')
   const [userCompletedSession, setUserCompletedSession] = useState(false)
   const [showRating, setShowRating] = useState(false)
+  const [showFileUpload, setShowFileUpload] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const [uploadSuccess, setUploadSuccess] = useState('')
+  const messagesEndRef = useRef(null)
+
+  // Handle file upload success
+  const handleUploadSuccess = (fileData) => {
+    setUploadSuccess(`File uploaded successfully: ${fileData.originalName}`)
+    setShowFileUpload(false)
+    setTimeout(() => setUploadSuccess(''), 3000)
+  }
+
+  // Handle file upload error
+  const handleUploadError = (error) => {
+    setUploadError(error)
+    setTimeout(() => setUploadError(''), 5000)
+  }
+
+  // Scroll to bottom of chat
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [chatMessages])
 
   // Handle user-initiated session completion
   const handleUserCompleteSession = async () => {
@@ -1135,6 +1466,9 @@ function SimplifiedUserInterface({ user }) {
     setCallNotification(null)
     setChatMessages([])
     setMessage('')
+    setShowFileUpload(false)
+    setUploadError('')
+    setUploadSuccess('')
   }
 
   // Show rating interface if user completed session
@@ -1241,9 +1575,9 @@ function SimplifiedUserInterface({ user }) {
                   fontWeight: '500'
                 }}>
                   {sessionStatus === 'pending' ? 'Waiting for Counselor' :
-                   sessionStatus === 'in-chat' ? 'In Chat' : 
-                   sessionStatus === 'in-call' ? 'In Call' : 
-                   sessionStatus === 'completed' ? 'Session Completed' : 'Pending'}
+                  sessionStatus === 'in-chat' ? 'In Chat' : 
+                  sessionStatus === 'in-call' ? 'In Call' : 
+                  sessionStatus === 'completed' ? 'Session Completed' : 'Pending'}
                 </span>
               </div>
             </div>
@@ -1262,7 +1596,23 @@ function SimplifiedUserInterface({ user }) {
                 <MeetingLinksButtons messageId={messageId} user={user} />
               </div>
               
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setShowFileUpload(!showFileUpload)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: showFileUpload ? '#dc2626' : '#8b5cf6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: '500'
+                  }}
+                >
+                  {showFileUpload ? 'Cancel Upload' : '📎 Upload Media'}
+                </button>
+
                 <button
                   onClick={handleUserCompleteSession}
                   disabled={userCompletedSession || sessionStatus === 'completed'}
@@ -1317,6 +1667,34 @@ function SimplifiedUserInterface({ user }) {
               </div>
             </div>
           </div>
+
+          {/* Upload Success/Error Messages */}
+          {uploadSuccess && (
+            <div className="success-message notification-enter">
+              ✅ {uploadSuccess}
+            </div>
+          )}
+          
+          {uploadError && (
+            <div className="error-message notification-enter">
+              ❌ {uploadError}
+            </div>
+          )}
+
+          {/* File Upload Component */}
+          {showFileUpload && (
+            <div style={{
+              padding: '1rem 2rem',
+              background: '#f9fafb',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <FileUploadComponent
+                messageId={messageId}
+                onUploadSuccess={handleUploadSuccess}
+                onUploadError={handleUploadError}
+              />
+            </div>
+          )}
 
           {callNotification && (
             <div style={{
@@ -1385,7 +1763,9 @@ function SimplifiedUserInterface({ user }) {
             display: 'flex',
             flexDirection: 'column',
             gap: '1rem'
-          }}>
+          }}
+          className="chat-messages"
+          >
             {sessionStatus === 'pending' && chatMessages.length === 1 && (
               <div style={{
                 textAlign: 'center',
@@ -1426,6 +1806,7 @@ function SimplifiedUserInterface({ user }) {
               chatMessages.map((msg, index) => (
                 <div
                   key={index}
+                  className="message-appear"
                   style={{
                     display: 'flex',
                     justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start'
@@ -1439,23 +1820,31 @@ function SimplifiedUserInterface({ user }) {
                     color: msg.sender === 'user' ? 'white' : '#374151',
                     wordWrap: 'break-word'
                   }}>
-                    <div style={{ fontSize: '0.875rem', lineHeight: '1.4' }}>
-                      {msg.message}
-                    </div>
-                    <div style={{
-                      fontSize: '0.75rem',
-                      marginTop: '0.5rem',
-                      opacity: 0.7
-                    }}>
-                      {new Date(msg.timestamp).toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </div>
+                    {/* Render media messages differently */}
+                    {msg.messageType === 'image' || msg.messageType === 'video' ? (
+                      <MediaMessage message={msg} isOwnMessage={msg.sender === 'user'} />
+                    ) : (
+                      <>
+                        <div style={{ fontSize: '0.875rem', lineHeight: '1.4' }}>
+                          {msg.message}
+                        </div>
+                        <div style={{
+                          fontSize: '0.75rem',
+                          marginTop: '0.5rem',
+                          opacity: 0.7
+                        }}>
+                          {new Date(msg.timestamp).toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               ))
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           {sessionStatus !== 'completed' && (
@@ -1572,7 +1961,7 @@ function SimplifiedUserInterface({ user }) {
                 marginTop: '0.5rem',
                 textAlign: 'center'
               }}>
-                Press Enter to send • Shift+Enter for new line • You can make a payment anytime using the button above
+                Press Enter to send • Shift+Enter for new line • Use Upload button for photos/videos
               </div>
             </div>
           )}
@@ -1706,7 +2095,7 @@ function SimplifiedUserInterface({ user }) {
           color: '#6b7280'
         }}>
           <p style={{ margin: '0 0 0.5rem 0' }}>Your privacy is important to us. All conversations are confidential.</p>
-          <p style={{ margin: 0 }}>Secure personal sessions • Chat & video call support • Pay what you feel it's worth</p>
+          <p style={{ margin: 0 }}>Secure personal sessions • Chat & video call support • Photo/video sharing • Pay what you feel it's worth</p>
         </div>
       </div>
     </div>

@@ -30,7 +30,8 @@ function Navigation({ currentPage }) {
   const navStyle = {
     position: 'fixed',
     top: '1rem',
-    right: '1rem',
+    left: '50%',
+    transform: 'translateX(-50%)', // Center horizontally
     display: 'flex',
     gap: '0.5rem',
     zIndex: 1000,

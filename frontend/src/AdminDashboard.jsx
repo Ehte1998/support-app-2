@@ -1,8 +1,386 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import io from 'socket.io-client'
 
 // Get API URL from environment variables
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+// File Upload Component for Admin
+function AdminFileUploadComponent({ messageId, onUploadSuccess, onUploadError }) {
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [dragOver, setDragOver] = useState(false)
+  const [caption, setCaption] = useState('')
+
+  const handleFileSelect = (file) => {
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 
+                         'video/mp4', 'video/mov', 'video/avi', 'video/mkv', 'video/webm', 'video/3gp']
+    
+    if (!allowedTypes.includes(file.type)) {
+      onUploadError('Only image and video files are allowed')
+      return
+    }
+
+    // Validate file size (4GB)
+    const maxSize = 4 * 1024 * 1024 * 1024 // 4GB
+    if (file.size > maxSize) {
+      onUploadError('File size exceeds 4GB limit')
+      return
+    }
+
+    uploadFile(file)
+  }
+
+  const uploadFile = async (file) => {
+    setUploading(true)
+    setUploadProgress(0)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      if (caption.trim()) {
+        formData.append('caption', caption.trim())
+      }
+
+      const token = localStorage.getItem('adminToken')
+
+      const xhr = new XMLHttpRequest()
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = Math.round((e.loaded / e.total) * 100)
+          setUploadProgress(progress)
+        }
+      })
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText)
+          onUploadSuccess(response.file)
+          setCaption('')
+        } else {
+          const error = JSON.parse(xhr.responseText)
+          onUploadError(error.error || 'Upload failed')
+        }
+        setUploading(false)
+        setUploadProgress(0)
+      })
+
+      xhr.addEventListener('error', () => {
+        onUploadError('Upload failed due to network error')
+        setUploading(false)
+        setUploadProgress(0)
+      })
+
+      xhr.open('POST', `${API_URL}/api/admin/upload/${messageId}`)
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      xhr.send(formData)
+
+    } catch (error) {
+      console.error('Upload error:', error)
+      onUploadError('Upload failed')
+      setUploading(false)
+      setUploadProgress(0)
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setDragOver(false)
+    
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      handleFileSelect(files[0])
+    }
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setDragOver(true)
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    setDragOver(false)
+  }
+
+  if (uploading) {
+    return (
+      <div className="fade-in" style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        padding: '1rem',
+        margin: '0.5rem 0'
+      }}>
+        <div className="loading-spinner" style={{
+          width: '20px',
+          height: '20px',
+          border: '2px solid #e5e7eb',
+          borderTop: '2px solid #3b82f6',
+          borderRadius: '50%'
+        }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.25rem' }}>
+            Uploading... {uploadProgress}%
+          </div>
+          <div className="upload-progress">
+            <div 
+              className={`upload-progress-bar ${uploadProgress > 0 ? 'progress-bar-active' : ''}`}
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ margin: '0.5rem 0' }}>
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        className={`file-drop-area ${dragOver ? 'drag-over upload-area-active' : ''} button-hover`}
+      >
+        <input
+          type="file"
+          accept="image/*,video/*"
+          onChange={(e) => handleFileSelect(e.target.files[0])}
+          style={{ display: 'none' }}
+          id={`admin-file-input-${messageId}`}
+        />
+        
+        <label
+          htmlFor={`admin-file-input-${messageId}`}
+          style={{ cursor: 'pointer', width: '100%', display: 'block' }}
+        >
+          <div style={{
+            fontSize: '1.5rem',
+            marginBottom: '0.25rem',
+            color: dragOver ? '#3b82f6' : '#6b7280'
+          }}>
+            📎
+          </div>
+          <div style={{
+            fontSize: '0.75rem',
+            color: dragOver ? '#3b82f6' : '#374151',
+            fontWeight: '500',
+            marginBottom: '0.25rem'
+          }}>
+            {dragOver ? 'Drop file here' : 'Upload photo/video'}
+          </div>
+          <div style={{
+            fontSize: '0.625rem',
+            color: '#6b7280',
+            lineHeight: '1.2'
+          }}>
+            Max 4GB • JPG, PNG, GIF, MP4, MOV, etc.
+          </div>
+        </label>
+      </div>
+      
+      <input
+        type="text"
+        value={caption}
+        onChange={(e) => setCaption(e.target.value)}
+        placeholder="Add a caption (optional)"
+        style={{
+          width: '100%',
+          padding: '0.5rem',
+          border: '1px solid #d1d5db',
+          borderRadius: '0.375rem',
+          fontSize: '0.875rem',
+          marginTop: '0.5rem'
+        }}
+      />
+    </div>
+  )
+}
+
+// Media Message Component for Admin Dashboard
+function AdminMediaMessage({ message, isOwnMessage }) {
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
+  const [showFullscreen, setShowFullscreen] = useState(false)
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const handleDownload = () => {
+    if (message.file?.url) {
+      const link = document.createElement('a')
+      link.href = `${API_URL}${message.file.url}`
+      link.download = message.file.originalName || 'file'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+  }
+
+  const renderMedia = () => {
+    if (!message.file) return null
+
+    const fileUrl = `${API_URL}${message.file.url}`
+
+    if (message.messageType === 'image') {
+      return (
+        <div style={{ position: 'relative' }}>
+          {!imageLoaded && !imageError && (
+            <div style={{
+              width: '200px',
+              height: '150px',
+              background: '#f3f4f6',
+              borderRadius: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#6b7280',
+              fontSize: '0.875rem'
+            }}>
+              Loading image...
+            </div>
+          )}
+          
+          {imageError ? (
+            <div style={{
+              width: '200px',
+              height: '150px',
+              background: '#fef2f2',
+              borderRadius: '0.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#dc2626',
+              fontSize: '0.875rem',
+              textAlign: 'center'
+            }}>
+              <div>Image failed to load</div>
+              <button onClick={handleDownload} style={{
+                marginTop: '0.5rem',
+                padding: '0.25rem 0.5rem',
+                background: '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.25rem',
+                fontSize: '0.75rem',
+                cursor: 'pointer'
+              }}>
+                Download
+              </button>
+            </div>
+          ) : (
+            <img
+              src={fileUrl}
+              alt={message.file.originalName}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+              onClick={() => setShowFullscreen(true)}
+              style={{
+                maxWidth: '300px',
+                maxHeight: '200px',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                objectFit: 'cover',
+                display: imageLoaded ? 'block' : 'none'
+              }}
+            />
+          )}
+
+          {showFullscreen && imageLoaded && !imageError && (
+            <div
+              className="fullscreen-modal"
+              onClick={() => setShowFullscreen(false)}
+            >
+              <img
+                src={fileUrl}
+                alt={message.file.originalName}
+                className="fullscreen-image"
+              />
+              <button
+                onClick={() => setShowFullscreen(false)}
+                className="fullscreen-close"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    if (message.messageType === 'video') {
+      return (
+        <div className="video-container">
+          <video
+            controls
+            className="video-player"
+            style={{
+              maxWidth: '300px',
+              maxHeight: '200px'
+            }}
+          >
+            <source src={fileUrl} type={message.file.mimetype} />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      )
+    }
+
+    return null
+  }
+
+  return (
+    <div>
+      {renderMedia()}
+      
+      {message.message && (
+        <div style={{
+          marginTop: '0.5rem',
+          fontSize: '0.875rem',
+          lineHeight: '1.4'
+        }}>
+          {message.message}
+        </div>
+      )}
+      
+      <div style={{
+        marginTop: '0.5rem',
+        fontSize: '0.75rem',
+        opacity: 0.8,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        flexWrap: 'wrap'
+      }}>
+        <span>{message.file?.originalName}</span>
+        <span>•</span>
+        <span>{formatFileSize(message.file?.size)}</span>
+        <button
+          onClick={handleDownload}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: isOwnMessage ? 'rgba(255,255,255,0.8)' : '#6b7280',
+            cursor: 'pointer',
+            fontSize: '0.75rem',
+            textDecoration: 'underline'
+          }}
+        >
+          Download
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function AdminDashboard({ user, onLogout }) {
   const [messages, setMessages] = useState([])
@@ -22,6 +400,24 @@ function AdminDashboard({ user, onLogout }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [bulkDeleteMode, setBulkDeleteMode] = useState(false)
   const [isDeletingBulk, setIsDeletingBulk] = useState(false)
+
+  // File upload state for admin
+  const [showFileUpload, setShowFileUpload] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const [uploadSuccess, setUploadSuccess] = useState('')
+
+  // File upload handlers for admin
+  const handleUploadSuccess = (fileData) => {
+    setUploadSuccess(`File uploaded successfully: ${fileData.originalName}`)
+    setShowFileUpload(false)
+    setTimeout(() => setUploadSuccess(''), 3000)
+    fetchChatMessages()
+  }
+
+  const handleUploadError = (error) => {
+    setUploadError(error)
+    setTimeout(() => setUploadError(''), 5000)
+  }
 
   // Socket connection setup
   useEffect(() => {
@@ -123,7 +519,6 @@ function AdminDashboard({ user, onLogout }) {
     }
   }
 
-  // Enhanced delete functionality
   const deleteMessage = async (messageId) => {
     try {
       const token = localStorage.getItem('adminToken')
@@ -228,17 +623,33 @@ function AdminDashboard({ user, onLogout }) {
     const messageData = {
       messageId: activeChat,
       message: newChatMessage.trim(),
-      sender: 'admin'
+      sender: 'admin',
+      messageType: 'text'
     }
 
     setChatMessages(prev => [...prev, {
       sender: 'admin',
       message: newChatMessage.trim(),
+      messageType: 'text',
       timestamp: new Date()
     }])
     
     socket.emit('send-chat-message', messageData)
     setNewChatMessage('')
+  }
+
+  const fetchChatMessages = async () => {
+    if (!activeChat) return
+    
+    try {
+      const response = await fetch(`${API_URL}/api/messages/${activeChat}`)
+      if (response.ok) {
+        const messageData = await response.json()
+        setChatMessages(messageData.chatMessages || [])
+      }
+    } catch (error) {
+      console.error('Error fetching chat messages:', error)
+    }
   }
 
   const setMeetingLinksForMessage = async (messageId) => {
@@ -295,7 +706,7 @@ function AdminDashboard({ user, onLogout }) {
     )
   }
 
-  // Chat Interface
+  // Chat Interface - Early return for active chat
   if (activeChat) {
     const activeChatMessage = messages.find(msg => msg._id === activeChat)
     
@@ -326,6 +737,9 @@ function AdminDashboard({ user, onLogout }) {
                 onClick={() => {
                   setActiveChat(null)
                   setChatMessages([])
+                  setShowFileUpload(false)
+                  setUploadError('')
+                  setUploadSuccess('')
                 }}
                 style={{
                   padding: '0.5rem 1rem',
@@ -344,20 +758,36 @@ function AdminDashboard({ user, onLogout }) {
                 Chat with {activeChatMessage?.name || 'User'}
               </span>
             </div>
-            <button
-              onClick={() => updateMessageStatus(activeChat, 'completed')}
-              style={{
-                padding: '0.5rem 1rem',
-                background: '#059669',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                fontSize: '0.875rem'
-              }}
-            >
-              Complete Session
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => setShowFileUpload(!showFileUpload)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: showFileUpload ? '#dc2626' : '#8b5cf6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {showFileUpload ? 'Cancel Upload' : '📎 Upload Media'}
+              </button>
+              <button
+                onClick={() => updateMessageStatus(activeChat, 'completed')}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: '#059669',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Complete Session
+              </button>
+            </div>
           </div>
 
           {activeChatMessage && (
@@ -381,6 +811,36 @@ function AdminDashboard({ user, onLogout }) {
             </div>
           )}
 
+          {uploadSuccess && (
+            <div className="success-message notification-enter" style={{
+              margin: '1rem 2rem 0 2rem'
+            }}>
+              ✅ {uploadSuccess}
+            </div>
+          )}
+          
+          {uploadError && (
+            <div className="error-message notification-enter" style={{
+              margin: '1rem 2rem 0 2rem'
+            }}>
+              ❌ {uploadError}
+            </div>
+          )}
+
+          {showFileUpload && (
+            <div style={{
+              padding: '1rem 2rem',
+              background: '#f9fafb',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <AdminFileUploadComponent
+                messageId={activeChat}
+                onUploadSuccess={handleUploadSuccess}
+                onUploadError={handleUploadError}
+              />
+            </div>
+          )}
+
           <div style={{
             flex: 1,
             padding: '1rem 2rem',
@@ -388,7 +848,9 @@ function AdminDashboard({ user, onLogout }) {
             display: 'flex',
             flexDirection: 'column',
             gap: '1rem'
-          }}>
+          }}
+          className="chat-messages"
+          >
             {chatMessages.map((msg, index) => (
               <div
                 key={index}
@@ -404,16 +866,22 @@ function AdminDashboard({ user, onLogout }) {
                   background: msg.sender === 'admin' ? '#3b82f6' : '#f3f4f6',
                   color: msg.sender === 'admin' ? 'white' : '#374151'
                 }}>
-                  <div style={{ fontSize: '0.875rem' }}>
-                    {msg.message}
-                  </div>
-                  <div style={{
-                    fontSize: '0.75rem',
-                    marginTop: '0.5rem',
-                    opacity: 0.7
-                  }}>
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </div>
+                  {msg.messageType === 'image' || msg.messageType === 'video' ? (
+                    <AdminMediaMessage message={msg} isOwnMessage={msg.sender === 'admin'} />
+                  ) : (
+                    <>
+                      <div style={{ fontSize: '0.875rem' }}>
+                        {msg.message}
+                      </div>
+                      <div style={{
+                        fontSize: '0.75rem',
+                        marginTop: '0.5rem',
+                        opacity: 0.7
+                      }}>
+                        {new Date(msg.timestamp).toLocaleTimeString()}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -458,7 +926,7 @@ function AdminDashboard({ user, onLogout }) {
     )
   }
 
-  // Calculate stats
+  // Calculate stats for main dashboard
   const pendingCount = messages.filter(msg => msg.status === 'pending').length
   const inChatCount = messages.filter(msg => msg.status === 'in-chat').length
   const inCallCount = messages.filter(msg => msg.status === 'in-call').length
@@ -468,11 +936,13 @@ function AdminDashboard({ user, onLogout }) {
     .filter(msg => msg.paymentStatus === 'paid')
     .reduce((sum, msg) => sum + (msg.amountPaid || 0), 0)
 
+    // Stats calculation continues from Part 3
   const ratedMessages = messages.filter(msg => msg.userRating)
   const avgRating = ratedMessages.length > 0 
     ? ratedMessages.reduce((sum, msg) => sum + msg.userRating.rating, 0) / ratedMessages.length
     : 0
 
+  // Main dashboard return
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -604,7 +1074,6 @@ function AdminDashboard({ user, onLogout }) {
         </div>
       )}
 
-      {/* Enhanced delete confirmation modal */}
       {showDeleteConfirm && (
         <div style={{
           position: 'fixed',
@@ -667,7 +1136,7 @@ function AdminDashboard({ user, onLogout }) {
                 fontSize: '0.75rem',
                 lineHeight: '1.4'
               }}>
-                This will remove all chat messages, payment information, and user ratings. 
+                This will remove all chat messages, payment information, user ratings, and uploaded files. 
                 <strong> This action cannot be undone.</strong>
               </p>
             </div>
@@ -830,8 +1299,26 @@ function AdminDashboard({ user, onLogout }) {
             Refresh
           </button>
         </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: 0, color: '#1f2937' }}>
+            Messages ({messages.length})
+          </h2>
+          <button
+            onClick={fetchMessages}
+            style={{
+              padding: '0.5rem 1rem',
+              background: '#f3f4f6',
+              border: 'none',
+              borderRadius: '0.375rem',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              color: '#374151'
+            }}
+          >
+            Refresh
+          </button>
+        </div>
 
-        {/* Enhanced bulk delete section */}
         {messages.length > 0 && (
           <div style={{ 
             padding: '1.5rem',
@@ -950,7 +1437,6 @@ function AdminDashboard({ user, onLogout }) {
                   position: 'relative'
                 }}
               >
-                {/* Bulk select checkbox */}
                 {bulkDeleteMode && (
                   <div style={{ 
                     position: 'absolute', 
@@ -1131,10 +1617,9 @@ function AdminDashboard({ user, onLogout }) {
                         </button>
                       )}
 
-                      {/* Enhanced individual delete button */}
                       <button
                         onClick={() => {
-                          if (confirm(`Are you sure you want to delete the conversation with ${message.name}?\n\nThis will permanently delete:\n• All chat messages\n• Payment information\n• User ratings\n\nThis action cannot be undone.`)) {
+                          if (confirm(`Are you sure you want to delete the conversation with ${message.name}?\n\nThis will permanently delete:\n• All chat messages\n• Payment information\n• User ratings\n• Uploaded files\n\nThis action cannot be undone.`)) {
                             deleteMessage(message._id)
                           }
                         }}
