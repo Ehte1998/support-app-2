@@ -151,7 +151,7 @@ function RatingComponent({ onRatingSubmit }) {
 
 function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
   const [customAmount, setCustomAmount] = useState('')
-  const [selectedAmount, setSelectedAmount] = useState(100)
+  const [selectedAmount, setSelectedAmount] = useState(2000)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
