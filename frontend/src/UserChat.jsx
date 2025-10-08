@@ -418,7 +418,7 @@ function RatingComponent({ onRatingSubmit }) {
           Thank you for your feedback!
         </div>
         <div style={{ color: '#15803d', fontSize: '0.875rem' }}>
-          Your rating helps us improve our counseling services.
+          Your rating helps us improve our platform.
         </div>
       </div>
     )
@@ -494,7 +494,7 @@ function RatingComponent({ onRatingSubmit }) {
         <textarea
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}
-          placeholder="Share your thoughts about the counseling session..."
+          placeholder="Share your thoughts about the converastion..."
           rows={3}
           style={{
             width: '100%',
@@ -580,7 +580,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Support Counseling',
-        description: 'Thank you for supporting our counseling services',
+        description: 'Thank you for supporting our platform',
         order_id: orderData.orderId,
         handler: async function (response) {
           try {
@@ -707,7 +707,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             color: '#1f2937',
             margin: '0 0 0.5rem 0'
           }}>
-            Session Completed!
+            Conversation Ended!
           </h2>
           <p style={{
             color: '#6b7280',
@@ -715,7 +715,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             lineHeight: '1.6',
             margin: 0
           }}>
-            We hope our counseling session was helpful. Your support helps us continue providing mental health services to those in need.
+            We hope our conversation was helpful. Your support helps us continue providing peer support to those in need.
           </p>
         </div>
 
@@ -743,7 +743,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             color: '#374151',
             marginBottom: '1rem'
           }}>
-            Choose an amount to support our services:
+            Choose an amount to support our platform:
           </h3>
 
           <div style={{
@@ -1198,7 +1198,7 @@ function SimplifiedUserInterface({ user }) {
 
   // Handle user-initiated session completion
   const handleUserCompleteSession = async () => {
-    if (confirm('Are you sure you want to end this counseling session?')) {
+    if (confirm('Are you sure you want to end this conversation?')) {
       try {
         const token = localStorage.getItem('userToken')
         const response = await fetch(`${API_URL}/api/messages/${messageId}/user-complete`, {
@@ -1373,7 +1373,7 @@ function SimplifiedUserInterface({ user }) {
         if (messageData.meetingLinks && (messageData.meetingLinks.googleMeet || messageData.meetingLinks.zoom)) {
           setCallNotification({
             messageId: msgId,
-            message: 'Your counselor is ready for a video call!',
+            message: 'Your supporter is ready for a video call!',
             meetingLinks: messageData.meetingLinks
           })
         }
@@ -1510,7 +1510,7 @@ function SimplifiedUserInterface({ user }) {
               color: '#1f2937',
               margin: '0 0 0.5rem 0'
             }}>
-              Session Complete!
+              Conversation Complete!
             </h2>
             <p style={{
               color: '#6b7280',
@@ -1518,7 +1518,7 @@ function SimplifiedUserInterface({ user }) {
               lineHeight: '1.6',
               margin: 0
             }}>
-              Thank you for using our counseling service. We'd love to hear about your experience.
+              Thank you for using our platform. We'd love to hear about your experience.
             </p>
           </div>
 
@@ -1533,7 +1533,7 @@ function SimplifiedUserInterface({ user }) {
       messageId={messageId}
       onPaymentComplete={(amount) => {
         setShowPayment(false)
-        alert(`Thank you for your payment of ₹${amount}! Your support helps us continue providing counseling services.`)
+        alert(`Thank you for your payment of ₹${amount}! Your support helps us continue providing peer support.`)
         startNewSession()
       }}
       onSkip={() => {
@@ -1565,7 +1565,7 @@ function SimplifiedUserInterface({ user }) {
             background: '#f9fafb'
           }}>
             <div style={{ marginBottom: '1rem' }}>
-              <h2 style={{ margin: 0, color: '#1f2937' }}>Chat with Counselor</h2>
+              <h2 style={{ margin: 0, color: '#1f2937' }}>Chat with Supporter</h2>
               <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
                 Status: <span style={{ 
                   color: sessionStatus === 'pending' ? '#f59e0b' :
@@ -1574,10 +1574,10 @@ function SimplifiedUserInterface({ user }) {
                         sessionStatus === 'completed' ? '#f59e0b' : '#6b7280',
                   fontWeight: '500'
                 }}>
-                  {sessionStatus === 'pending' ? 'Waiting for Counselor' :
+                  {sessionStatus === 'pending' ? 'Waiting for Supporter' :
                   sessionStatus === 'in-chat' ? 'In Chat' : 
                   sessionStatus === 'in-call' ? 'In Call' : 
-                  sessionStatus === 'completed' ? 'Session Completed' : 'Pending'}
+                  sessionStatus === 'completed' ? 'Conversation Ended' : 'Pending'}
                 </span>
               </div>
             </div>
@@ -1627,7 +1627,7 @@ function SimplifiedUserInterface({ user }) {
                     fontWeight: '500'
                   }}
                 >
-                  {userCompletedSession || sessionStatus === 'completed' ? '✓ Session Ended' : 'End Session'}
+                  {userCompletedSession || sessionStatus === 'completed' ? '✓ Session Ended' : 'End Conversation'}
                 </button>
 
                 <button
@@ -1662,7 +1662,7 @@ function SimplifiedUserInterface({ user }) {
                     fontWeight: '500'
                   }}
                 >
-                  New Session
+                  New Conversation
                 </button>
               </div>
             </div>
@@ -1788,7 +1788,7 @@ function SimplifiedUserInterface({ user }) {
                   fontSize: '0.875rem',
                   lineHeight: '1.5'
                 }}>
-                  A counselor will respond soon. You can start typing your next message below or wait for their response.
+                  A supporter will respond soon. You can start typing your next message below or wait for their response.
                 </div>
               </div>
             )}
@@ -1868,14 +1868,14 @@ function SimplifiedUserInterface({ user }) {
                     color: '#166534',
                     marginBottom: '0.25rem'
                   }}>
-                    💚 Support Our Service
+                    💚 Support Our Platform
                   </div>
                   <div style={{
                     fontSize: '0.75rem',
                     color: '#15803d',
                     lineHeight: '1.4'
                   }}>
-                    Found this helpful? Support us with any amount you feel comfortable with.
+                    Found this helpful? Contribute any amount you feel comfortable with.
                   </div>
                 </div>
                 
@@ -1974,7 +1974,7 @@ function SimplifiedUserInterface({ user }) {
               textAlign: 'center'
             }}>
               <div style={{ color: '#92400e', fontWeight: '600', marginBottom: '0.5rem' }}>
-                Session Completed
+                Conversation Ended
               </div>
               <div style={{ color: '#78350f', fontSize: '0.875rem' }}>
                 You should see the payment page shortly.
@@ -2026,7 +2026,7 @@ function SimplifiedUserInterface({ user }) {
             Share Your Feelings
           </h1>
           <p style={{ color: '#6b7280', fontSize: '1rem', lineHeight: '1.6', margin: 0 }}>
-            Hello {user?.name}, share what's on your mind and get personalized support from a caring counselor.
+            Hello {user?.name}, share what's on your mind and connect with a caring listener.
           </p>
         </div>
 
@@ -2094,8 +2094,8 @@ function SimplifiedUserInterface({ user }) {
           fontSize: '0.875rem',
           color: '#6b7280'
         }}>
-          <p style={{ margin: '0 0 0.5rem 0' }}>Your privacy is important to us. All conversations are confidential.</p>
-          <p style={{ margin: 0 }}>Secure personal sessions • Chat & video call support • Photo/video sharing • Pay what you feel it's worth</p>
+          <p style={{ margin: '0 0 0.5rem 0' }}>Your privacy matters. All conversations are confidential.</p>
+          <p style={{ margin: 0 }}>Anonymous peer support • Chat & video option • Photo/video sharing • Pay what feels right</p>
         </div>
       </div>
     </div>

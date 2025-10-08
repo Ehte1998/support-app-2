@@ -54,7 +54,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Support Counseling',
-        description: 'Thank you for supporting our counseling services',
+        description: 'Thank you for supporting our platform',
         order_id: orderData.orderId,
         handler: async function (response) {
           try {
@@ -184,7 +184,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             color: '#1f2937',
             margin: '0 0 0.5rem 0'
           }}>
-            Session Completed!
+            Conversation Complete!
           </h2>
           <p style={{
             color: '#6b7280',
@@ -192,7 +192,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             lineHeight: '1.6',
             margin: 0
           }}>
-            We hope our counseling session was helpful. Your support helps us continue providing mental health services to those in need.
+            Thank you for sharing with us. Your contribution helps us keep this peer support platform running.
           </p>
         </div>
 
@@ -222,7 +222,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             color: '#374151',
             marginBottom: '1rem'
           }}>
-            Choose an amount to support our services:
+            Show your appreciation (optional):
           </h3>
 
           {/* Predefined Amounts */}
@@ -339,7 +339,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               </>
             ) : (
               <>
-                💳 Pay ₹{currentAmount || 0}
+                💙 Contribute ₹{currentAmount || 0}
               </>
             )}
           </button>
@@ -384,7 +384,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               fontWeight: '500',
               color: '#374151'
             }}>
-              Secure Payment
+              Secure Contribution
             </span>
           </div>
           <p style={{
@@ -393,8 +393,8 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             margin: 0,
             lineHeight: '1.4'
           }}>
-            Your payment is processed securely through Razorpay. We never store your card details. 
-            All transactions are encrypted and secure.
+            All contributions are processed securely through Razorpay. We never store your card details. 
+            his helps maintain our peer support platform.
           </p>
         </div>
 

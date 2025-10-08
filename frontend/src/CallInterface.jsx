@@ -249,7 +249,7 @@ function CallInterface({ messageId, isAdmin, onCallEnd }) {
           </div>
           <h2 style={{ marginBottom: '1rem' }}>Call Ended</h2>
           <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>
-            Thank you for using our counseling service
+            Thank you for connecting with us
           </p>
           <div style={{
             background: '#374151',
@@ -284,7 +284,7 @@ function CallInterface({ messageId, isAdmin, onCallEnd }) {
       }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
-            {isAdmin ? 'Counselor Session' : 'Support Call'}
+            {isAdmin ? 'Support Conversation' : 'Support Call'}
           </h2>
           <div style={{ fontSize: '0.875rem', color: '#9ca3af', marginTop: '0.25rem' }}>
             {connecting ? 'Connecting...' : 
@@ -339,7 +339,7 @@ function CallInterface({ messageId, isAdmin, onCallEnd }) {
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📞</div>
           <h3 style={{ marginBottom: '1rem' }}>Incoming Call</h3>
           <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>
-            Counselor wants to start a session
+            Supporter wants to connect
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button
@@ -401,7 +401,7 @@ function CallInterface({ messageId, isAdmin, onCallEnd }) {
               <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>
                 {isAdmin ? 
                   'Click "Start Call" to connect with the user' :
-                  'Waiting for counselor to start the session'
+                  'Waiting for supporter to start the call'
                 }
               </p>
               {isAdmin && mediaReady && (
@@ -432,7 +432,7 @@ function CallInterface({ messageId, isAdmin, onCallEnd }) {
             {/* My Video */}
             <div style={{ textAlign: 'center' }}>
               <h3 style={{ marginBottom: '1rem' }}>
-                {isAdmin ? 'You (Counselor)' : 'You'}
+                {isAdmin ? 'You (Supporter)' : 'You'}
               </h3>
               {audioOnly || videoOff ? (
                 <div style={{
@@ -467,7 +467,7 @@ function CallInterface({ messageId, isAdmin, onCallEnd }) {
             {callAccepted && (
               <div style={{ textAlign: 'center' }}>
                 <h3 style={{ marginBottom: '1rem' }}>
-                  {isAdmin ? 'User' : 'Counselor'}
+                  {isAdmin ? 'User' : 'Supporter'}
                 </h3>
                 <video
                   ref={userVideo}

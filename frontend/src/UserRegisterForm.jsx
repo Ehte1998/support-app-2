@@ -60,7 +60,7 @@ function UserRegisterForm({ onSwitchToLogin }) {
             Create Account
           </h1>
           <p style={{ color: '#6b7280' }}>
-            Get started with personalized counseling support
+            Join our peer support community
           </p>
         </div>
 
@@ -160,7 +160,7 @@ function UserRegisterForm({ onSwitchToLogin }) {
                 onChange={(e) => setIsAnonymous(e.target.checked)}
                 style={{ marginRight: '0.5rem' }}
               />
-              Keep my identity anonymous in sessions
+              Keep my identity anonymous in conversations
             </label>
           </div>
 

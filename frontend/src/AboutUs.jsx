@@ -19,7 +19,7 @@ function AboutUs() {
           margin: '0 0 1rem 0',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)'
         }}>
-          About EhteCounseling
+          About FeelingsShare
         </h1>
         <p style={{
           fontSize: '1.2rem',
@@ -28,7 +28,41 @@ function AboutUs() {
           margin: '0 auto',
           lineHeight: '1.6'
         }}>
-          Providing compassionate, confidential mental health support when you need it most
+          A safe, judgment-free space where you can share your feelings with caring listeners
+        </p>
+      </div>
+
+      {/* CRITICAL DISCLAIMER BANNER */}
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto 2rem auto',
+        background: '#fef2f2',
+        border: '2px solid #dc2626',
+        borderRadius: '1rem',
+        padding: '1.5rem',
+        boxShadow: '0 4px 12px rgba(220, 38, 38, 0.2)'
+      }}>
+        <h3 style={{
+          color: '#dc2626',
+          fontSize: '1.2rem',
+          fontWeight: 'bold',
+          marginBottom: '0.75rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          justifyContent: 'center'
+        }}>
+          ⚠️ IMPORTANT: This is NOT Professional Therapy
+        </h3>
+        <p style={{
+          color: '#991b1b',
+          textAlign: 'center',
+          lineHeight: '1.6',
+          margin: 0
+        }}>
+          FeelingsShare is a <strong>peer support platform</strong> with volunteer listeners, not licensed therapists. 
+          This is NOT professional mental health care or medical advice. For crisis situations, call <strong>112</strong> or 
+          crisis helplines: KIRAN <strong>1800-599-0019</strong>, AASRA <strong>91-22-27546669</strong>
         </p>
       </div>
 
@@ -63,10 +97,10 @@ function AboutUs() {
             maxWidth: '800px',
             margin: '0 auto'
           }}>
-            At EhteCounseling, we believe that everyone deserves access to quality mental health support. 
-            Our platform connects you with experienced counselors who provide personalized, confidential sessions 
-            tailored to your unique needs. We're committed to breaking down barriers to mental health care 
-            and making support accessible, affordable, and convenient.
+            At FeelingsShare, we believe that everyone deserves a safe space to express their feelings. 
+            Our platform connects you with caring volunteer listeners who provide compassionate peer support 
+            in a judgment-free environment. We're committed to making emotional support accessible, 
+            affordable, and convenient for everyone who needs someone to listen.
           </p>
         </div>
 
@@ -104,14 +138,14 @@ function AboutUs() {
               color: '#1f2937',
               marginBottom: '1rem'
             }}>
-              100% Confidential
+              Anonymous & Safe
             </h3>
             <p style={{
               color: '#6b7280',
               lineHeight: '1.6'
             }}>
-              Your privacy is our top priority. All conversations are encrypted and completely confidential, 
-              ensuring a safe space for you to share and heal.
+              Your privacy is our top priority. All conversations are confidential, 
+              ensuring a safe space for you to share openly and honestly.
             </p>
           </div>
 
@@ -143,14 +177,14 @@ function AboutUs() {
               color: '#1f2937',
               marginBottom: '1rem'
             }}>
-              Chat & Video Support
+              Chat & Video Options
             </h3>
             <p style={{
               color: '#6b7280',
               lineHeight: '1.6'
             }}>
-              Connect through text chat or video calls based on your comfort level. 
-              Our flexible platform adapts to your communication preferences.
+              Connect through text chat or optional video calls based on your comfort level. 
+              Our flexible platform adapts to your preferences.
             </p>
           </div>
 
@@ -174,7 +208,7 @@ function AboutUs() {
               margin: '0 auto 1rem',
               fontSize: '1.5rem'
             }}>
-              💰
+              💙
             </div>
             <h3 style={{
               fontSize: '1.3rem',
@@ -182,14 +216,14 @@ function AboutUs() {
               color: '#1f2937',
               marginBottom: '1rem'
             }}>
-              Pay What You Can
+              Pay What Feels Right
             </h3>
             <p style={{
               color: '#6b7280',
               lineHeight: '1.6'
             }}>
-              Mental health support shouldn't be limited by financial barriers. 
-              Our pay-what-you-feel-it's-worth model makes counseling accessible to everyone.
+              Emotional support shouldn't be limited by financial barriers. 
+              Our voluntary contribution model makes peer support accessible to everyone.
             </p>
           </div>
         </div>
@@ -274,14 +308,14 @@ function AboutUs() {
                 color: '#1f2937',
                 marginBottom: '0.5rem'
               }}>
-                Connect with Counselor
+                Connect with Listener
               </h3>
               <p style={{
                 color: '#6b7280',
                 fontSize: '0.9rem',
                 lineHeight: '1.5'
               }}>
-                Get matched with an experienced counselor who understands your needs
+                Get matched with a caring volunteer listener who will support you
               </p>
             </div>
 
@@ -308,14 +342,14 @@ function AboutUs() {
                 color: '#1f2937',
                 marginBottom: '0.5rem'
               }}>
-                Start Your Journey
+                Feel Supported
               </h3>
               <p style={{
                 color: '#6b7280',
                 fontSize: '0.9rem',
                 lineHeight: '1.5'
               }}>
-                Begin your path to healing through personalized counseling sessions
+                Experience empathetic peer support through caring conversation
               </p>
             </div>
           </div>
@@ -350,14 +384,14 @@ function AboutUs() {
                 color: '#059669',
                 marginBottom: '0.5rem'
               }}>
-                Compassion
+                Empathy
               </h3>
               <p style={{
                 color: '#6b7280',
                 fontSize: '0.9rem',
                 lineHeight: '1.5'
               }}>
-                We approach every interaction with empathy and understanding
+                We approach every conversation with genuine understanding and care
               </p>
             </div>
             
@@ -375,7 +409,7 @@ function AboutUs() {
                 fontSize: '0.9rem',
                 lineHeight: '1.5'
               }}>
-                Mental health support should be available to everyone, regardless of circumstances
+                Peer support should be available to everyone, regardless of circumstances
               </p>
             </div>
             
@@ -399,6 +433,89 @@ function AboutUs() {
           </div>
         </div>
 
+        {/* What We Are NOT */}
+        <div style={{
+          background: 'white',
+          borderRadius: '1rem',
+          padding: '3rem',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+          border: '2px solid #fbbf24'
+        }}>
+          <h2 style={{
+            fontSize: '2rem',
+            fontWeight: '600',
+            color: '#92400e',
+            marginBottom: '2rem',
+            textAlign: 'center'
+          }}>
+            What We Are NOT
+          </h2>
+          
+          <div style={{
+            display: 'grid',
+            gap: '1rem',
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}>
+            <div style={{
+              background: '#fef3c7',
+              padding: '1rem',
+              borderRadius: '0.5rem',
+              border: '1px solid #fbbf24'
+            }}>
+              <p style={{
+                color: '#78350f',
+                margin: 0,
+                lineHeight: '1.6'
+              }}>
+                ❌ <strong>NOT professional therapy</strong> or medical treatment
+              </p>
+            </div>
+            <div style={{
+              background: '#fef3c7',
+              padding: '1rem',
+              borderRadius: '0.5rem',
+              border: '1px solid #fbbf24'
+            }}>
+              <p style={{
+                color: '#78350f',
+                margin: 0,
+                lineHeight: '1.6'
+              }}>
+                ❌ <strong>NOT licensed therapists</strong> - our listeners are trained volunteers
+              </p>
+            </div>
+            <div style={{
+              background: '#fef3c7',
+              padding: '1rem',
+              borderRadius: '0.5rem',
+              border: '1px solid #fbbf24'
+            }}>
+              <p style={{
+                color: '#78350f',
+                margin: 0,
+                lineHeight: '1.6'
+              }}>
+                ❌ <strong>NOT for crisis situations</strong> - please call emergency services
+              </p>
+            </div>
+            <div style={{
+              background: '#fef3c7',
+              padding: '1rem',
+              borderRadius: '0.5rem',
+              border: '1px solid #fbbf24'
+            }}>
+              <p style={{
+                color: '#78350f',
+                margin: 0,
+                lineHeight: '1.6'
+              }}>
+                ❌ <strong>NOT a substitute</strong> for professional mental health care
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Contact Section */}
         <div style={{
           background: 'rgba(255,255,255,0.1)',
@@ -414,7 +531,7 @@ function AboutUs() {
             color: 'white',
             marginBottom: '1rem'
           }}>
-            Ready to Start Your Journey?
+            Ready to Share?
           </h2>
           <p style={{
             fontSize: '1.1rem',
@@ -422,7 +539,7 @@ function AboutUs() {
             marginBottom: '2rem',
             lineHeight: '1.6'
           }}>
-            Take the first step towards better mental health. We're here to support you every step of the way.
+            Connect with a caring listener who will support you. We're here to listen.
           </p>
           <button
             onClick={() => window.location.href = '/'}
@@ -441,7 +558,7 @@ function AboutUs() {
             onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
             onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
           >
-            Start Counseling Session
+            Share Your Feelings
           </button>
         </div>
       </div>

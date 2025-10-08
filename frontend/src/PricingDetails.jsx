@@ -19,7 +19,7 @@ function PricingDetails() {
           margin: '0 0 1rem 0',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)'
         }}>
-          Pricing That Works For You
+          Voluntary Contributions
         </h1>
         <p style={{
           fontSize: '1.2rem',
@@ -28,7 +28,7 @@ function PricingDetails() {
           margin: '0 auto',
           lineHeight: '1.6'
         }}>
-          Mental health support shouldn't be limited by financial barriers
+          Peer support shouldn't be limited by financial barriers
         </p>
       </div>
 
@@ -74,8 +74,8 @@ function PricingDetails() {
             maxWidth: '700px',
             margin: '0 auto 2rem'
           }}>
-            We believe everyone deserves access to mental health support, regardless of their financial situation. 
-            After your counseling session, you decide what the experience was worth to you.
+            We believe everyone deserves access to peer support, regardless of their financial situation. 
+            After your conversation, you decide what the experience was worth to you.
           </p>
           
           <div style={{
@@ -154,13 +154,13 @@ function PricingDetails() {
                 color: '#1f2937',
                 marginBottom: '1rem'
               }}>
-                Get Your Counseling
+                Connect with Listener
               </h3>
               <p style={{
                 color: '#6b7280',
                 lineHeight: '1.6'
               }}>
-                Receive professional counseling support through chat or video call. 
+                Receive peer support from a caring volunteer listener through chat or optional video. 
                 Focus entirely on your mental health without worrying about costs.
               </p>
             </div>
@@ -199,7 +199,7 @@ function PricingDetails() {
                 color: '#6b7280',
                 lineHeight: '1.6'
               }}>
-                After your session, rate your experience and provide feedback. 
+                After your conversation, rate your experience and provide feedback. 
                 Your input helps us improve our services.
               </p>
             </div>
@@ -259,7 +259,7 @@ function PricingDetails() {
             marginBottom: '1rem',
             textAlign: 'center'
           }}>
-            Payment Guidance
+            Contribution Guidance
           </h2>
           <p style={{
             textAlign: 'center',
@@ -337,7 +337,7 @@ function PricingDetails() {
                 fontSize: '0.9rem',
                 lineHeight: '1.5'
               }}>
-                A comfortable contribution that helps sustain our counseling services for others.
+                A comfortable contribution that helps sustain our peer support platform for others.
               </p>
             </div>
 
@@ -371,7 +371,7 @@ function PricingDetails() {
                 fontSize: '0.9rem',
                 lineHeight: '1.5'
               }}>
-                Your generosity enables us to provide free or low-cost sessions to those in need.
+                Your generosity enables us to provide free or low-cost conversations to those in need.
               </p>
             </div>
           </div>
@@ -417,7 +417,7 @@ function PricingDetails() {
                 color: '#6b7280',
                 lineHeight: '1.6'
               }}>
-                You can access mental health support immediately without worrying about upfront costs or insurance coverage.
+                You can access peer support immediately without worrying about upfront costs or insurance coverage.
               </p>
             </div>
 
@@ -462,7 +462,7 @@ function PricingDetails() {
                 color: '#6b7280',
                 lineHeight: '1.6'
               }}>
-                Those who can afford more help subsidize sessions for those who cannot, creating a supportive community.
+                Those who can afford more help subsidize conversations for those who cannot, creating a supportive community.
               </p>
             </div>
           </div>
@@ -509,7 +509,7 @@ function PricingDetails() {
                 margin: 0
               }}>
                 That's completely okay. Your mental health is more important than payment. 
-                Access the counseling you need, and if your situation improves in the future, you can always contribute then.
+                Access the conversation you need, and if your situation improves in the future, you can always contribute then.
               </p>
             </div>
 
@@ -532,7 +532,7 @@ function PricingDetails() {
                 lineHeight: '1.6',
                 margin: 0
               }}>
-                There's no minimum payment required. The maximum payment is ₹1,00,000 per session, 
+                There's no minimum payment required. The maximum payment is ₹1,00,000 per conversation, 
                 though most contributions range from ₹100 to ₹5,000.
               </p>
             </div>
@@ -557,7 +557,7 @@ function PricingDetails() {
                 margin: 0
               }}>
                 Consider factors like the value you received, your financial situation, 
-                and what you'd be comfortable paying for similar professional services. Trust your instincts.
+                and what you'd be comfortable paying for similar platform support. Trust your instincts.
               </p>
             </div>
           </div>
@@ -586,7 +586,7 @@ function PricingDetails() {
             marginBottom: '2rem',
             lineHeight: '1.6'
           }}>
-            Don't let financial concerns prevent you from getting the mental health support you deserve.
+            Don't let financial concerns prevent you from getting the peer support you deserve.
           </p>
           <button
             onClick={() => window.location.href = '/'}
@@ -605,7 +605,7 @@ function PricingDetails() {
             onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
             onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
           >
-            Start Your Counseling Session
+            Start Your Conversation
           </button>
         </div>
       </div>

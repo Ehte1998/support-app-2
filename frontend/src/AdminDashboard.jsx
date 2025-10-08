@@ -755,7 +755,7 @@ function AdminDashboard({ user, onLogout }) {
                 ← Back
               </button>
               <span style={{ fontSize: '1.1rem', fontWeight: '600', color: '#1f2937' }}>
-                Chat with {activeChatMessage?.name || 'User'}
+                Supporting {activeChatMessage?.name || 'User'}
               </span>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -785,7 +785,7 @@ function AdminDashboard({ user, onLogout }) {
                   fontSize: '0.875rem'
                 }}
               >
-                Complete Session
+                End Conversation
               </button>
             </div>
           </div>
@@ -1189,7 +1189,7 @@ function AdminDashboard({ user, onLogout }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
             <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, color: '#1f2937' }}>
-              Support Dashboard
+              Supporter Dashboard
             </h1>
             {user && (
               <p style={{ color: '#6b7280', fontSize: '0.875rem', margin: '0.25rem 0 0 0' }}>
@@ -1517,7 +1517,7 @@ function AdminDashboard({ user, onLogout }) {
                     border: '1px solid #bbf7d0'
                   }}>
                     <div style={{ color: '#166534', fontWeight: '600', marginBottom: '0.5rem' }}>
-                      ✅ Session completed {message.completedBy === 'user' ? 'by user' : 'by admin'}
+                      ✅ Conversation Ended {message.completedBy === 'user' ? 'by user' : 'by admin'}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       <span>Rating:</span>
@@ -1613,7 +1613,7 @@ function AdminDashboard({ user, onLogout }) {
                             fontSize: '0.875rem'
                           }}
                         >
-                          ✅ Complete Session
+                          ✅ End Conversation
                         </button>
                       )}
 

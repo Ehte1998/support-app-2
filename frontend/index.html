@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <!-- Primary Meta Tags -->
-    <title>Professional Counseling Support - Mental Health Services</title>
-    <meta name="title" content="Professional Counseling Support - Mental Health Services" />
-    <meta name="description" content="Professional, confidential counseling services. Connect with licensed counselors through secure chat and video calls. Pay-what-you-can mental health support." />
-    <meta name="author" content="Counseling Support Services" />
-    <meta name="keywords" content="counseling, mental health, therapy, support, confidential, professional" />
+    <title>FeelingsShare - Peer Support Platform | Share Your Feelings Anonymously</title>
+    <meta name="title" content="FeelingsShare - Anonymous Peer Support Platform" />
+    <meta name="description" content="Safe, anonymous peer support platform. Share your feelings with caring volunteer listeners through secure chat. Pay-what-feels-right. NOT professional therapy." />
+    <meta name="author" content="FeelingsShare" />
+    <meta name="keywords" content="peer support, feelings, emotional support, anonymous chat, listeners, mental wellbeing, support community, confidential" />
+    
+    <!-- CRITICAL: Disclaimer in meta -->
+    <meta name="disclaimer" content="Peer support platform - NOT professional therapy or medical advice. For emergencies call 112 or crisis helplines." />
     
     <!-- Security Meta Tags -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
@@ -19,35 +22,132 @@
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Professional Counseling Support Services" />
-    <meta property="og:description" content="Professional, confidential counseling services. Connect with licensed counselors through secure platforms." />
-    <meta property="og:site_name" content="Counseling Support" />
+    <meta property="og:title" content="FeelingsShare - Anonymous Peer Support Platform" />
+    <meta property="og:description" content="Share your feelings with caring volunteer listeners in a safe, judgment-free space. Peer support platform - not professional therapy." />
+    <meta property="og:site_name" content="FeelingsShare" />
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary" />
-    <meta property="twitter:title" content="Professional Counseling Support Services" />
-    <meta property="twitter:description" content="Professional, confidential counseling services. Connect with licensed counselors through secure platforms." />
+    <meta property="twitter:title" content="FeelingsShare - Peer Support Platform" />
+    <meta property="twitter:description" content="Anonymous peer support with caring listeners. Safe space to share your feelings. Not professional therapy." />
+    
+    <!-- Robots Meta -->
+    <meta name="robots" content="index, follow" />
+    <meta name="googlebot" content="index, follow" />
+    
+    <!-- App Category -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="FeelingsShare" />
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     
-    <!-- Theme Color -->
-    <meta name="theme-color" content="#3b82f6" />
+    <!-- Theme Color - Changed to match your gradient -->
+    <meta name="theme-color" content="#667eea" />
+    <meta name="msapplication-TileColor" content="#667eea" />
     
     <!-- Preconnect for Performance -->
     <link rel="preconnect" href="https://checkout.razorpay.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+    
+    <!-- JSON-LD Structured Data for Better SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "FeelingsShare",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "Web, Android, iOS",
+      "description": "Anonymous peer support platform connecting users with caring volunteer listeners. NOT professional therapy.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "INR",
+        "description": "Free peer support with optional voluntary contributions"
+      },
+      "featureList": [
+        "Anonymous peer support",
+        "Secure chat conversations",
+        "Optional video calls",
+        "Volunteer listeners",
+        "Confidential and private"
+      ],
+      "disclaimer": "This is a peer support platform with volunteer listeners. NOT professional therapy or medical advice. For emergencies, contact crisis services.",
+      "audience": {
+        "@type": "Audience",
+        "audienceType": "Adults seeking peer emotional support"
+      }
+    }
+    </script>
+    
+    <!-- Emergency Resources Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "FeelingsShare - Emergency Resources",
+      "about": {
+        "@type": "MedicalWebPage",
+        "disclaimer": "For mental health emergencies, please contact professional crisis services immediately.",
+        "specialty": [
+          {
+            "@type": "ContactPoint",
+            "name": "Emergency Services India",
+            "telephone": "112",
+            "contactType": "Emergency"
+          },
+          {
+            "@type": "ContactPoint",
+            "name": "KIRAN Mental Health Helpline",
+            "telephone": "1800-599-0019",
+            "contactType": "Crisis Support"
+          },
+          {
+            "@type": "ContactPoint",
+            "name": "AASRA Suicide Prevention",
+            "telephone": "91-22-27546669",
+            "contactType": "Crisis Support"
+          }
+        ]
+      }
+    }
+    </script>
     
     <script>
       // Polyfill for simple-peer global variable issue
       if (typeof global === 'undefined') {
         var global = globalThis;
       }
+      
+      // Console disclaimer (optional - shows when devtools opened)
+      console.log('%c⚠️ IMPORTANT DISCLAIMER', 'color: #dc2626; font-size: 18px; font-weight: bold;');
+      console.log('%cThis is a PEER SUPPORT platform, NOT professional therapy.', 'color: #991b1b; font-size: 14px;');
+      console.log('%cFor emergencies: Call 112 or crisis helplines', 'color: #dc2626; font-size: 14px;');
+      console.log('%cKIRAN: 1800-599-0019 | AASRA: 91-22-27546669', 'color: #dc2626; font-size: 12px;');
     </script>
   </head>
   <body>
+    <!-- Noscript warning for users with JavaScript disabled -->
+    <noscript>
+      <div style="background: #fef2f2; border: 2px solid #dc2626; padding: 2rem; margin: 2rem; border-radius: 0.5rem; text-align: center;">
+        <h2 style="color: #dc2626; margin-bottom: 1rem;">JavaScript Required</h2>
+        <p style="color: #991b1b; margin-bottom: 1rem;">
+          FeelingsShare requires JavaScript to function. Please enable JavaScript in your browser.
+        </p>
+        <p style="color: #991b1b; font-weight: bold;">
+          ⚠️ IMPORTANT: This is a peer support platform, NOT professional therapy.
+          <br />For emergencies, call 112 or crisis helplines: KIRAN 1800-599-0019
+        </p>
+      </div>
+    </noscript>
+    
+    <!-- Main app container -->
     <div id="root"></div>
+    
+    <!-- Main app script -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

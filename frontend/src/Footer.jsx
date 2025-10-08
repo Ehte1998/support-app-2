@@ -8,6 +8,24 @@ function Footer() {
       padding: '2rem 1rem',
       marginTop: 'auto'
     }}>
+      {/* CRITICAL DISCLAIMER BANNER */}
+      <div style={{
+        background: '#fef2f2',
+        color: '#991b1b',
+        padding: '1rem',
+        borderRadius: '0.5rem',
+        marginBottom: '2rem',
+        textAlign: 'center',
+        border: '2px solid #dc2626'
+      }}>
+        <strong>⚠️ Peer Support Platform - Not Professional Therapy</strong>
+        <br />
+        <span style={{ fontSize: '0.875rem' }}>
+          For emergencies call <strong>112</strong> or crisis helplines: 
+          KIRAN <strong>1800-599-0019</strong>, AASRA <strong>91-22-27546669</strong>
+        </span>
+      </div>
+
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto',
@@ -24,15 +42,23 @@ function Footer() {
             marginBottom: '1rem',
             color: 'white'
           }}>
-            EhteCounseling
+            FeelingsShare
           </h3>
           <p style={{
             color: 'rgba(255,255,255,0.8)',
             lineHeight: '1.6',
             fontSize: '0.9rem'
           }}>
-            Compassionate, confidential mental health support with a pay-what-you-can model. 
-            Your wellbeing matters more than your wallet.
+            A peer support platform connecting you with caring volunteer listeners. 
+            Share your feelings in a safe, judgment-free space.
+          </p>
+          <p style={{
+            color: '#fbbf24',
+            fontSize: '0.75rem',
+            marginTop: '0.5rem',
+            fontWeight: '600'
+          }}>
+            Not professional therapy
           </p>
         </div>
 
@@ -52,13 +78,13 @@ function Footer() {
             gap: '0.5rem'
           }}>
             <a href="/" style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: '0.9rem' }}>
-              Start Counseling
+              Share Feelings
             </a>
             <a href="/?about" style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: '0.9rem' }}>
               About Us
             </a>
             <a href="/?pricing" style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: '0.9rem' }}>
-              Pricing
+              Contributions
             </a>
             <a href="/?contact" style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: '0.9rem' }}>
               Contact Us
@@ -93,15 +119,15 @@ function Footer() {
           </div>
         </div>
 
-        {/* Contact Info */}
+        {/* Emergency Resources */}
         <div>
           <h4 style={{
             fontSize: '1.1rem',
             fontWeight: '600',
             marginBottom: '1rem',
-            color: 'white'
+            color: '#dc2626'
           }}>
-            Get Support
+            🆘 Crisis Resources
           </h4>
           <div style={{
             display: 'flex',
@@ -109,13 +135,25 @@ function Footer() {
             gap: '0.5rem'
           }}>
             <a 
-              href="mailto:support@ehtecounseling.com" 
-              style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: '0.9rem' }}
+              href="tel:112" 
+              style={{ color: '#fca5a5', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '600' }}
             >
-              support@ehtecounseling.com
+              📞 Emergency: 112
             </a>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem', margin: '0.5rem 0 0 0' }}>
-              Response time: 24-48 hours
+            <a 
+              href="tel:18005990019" 
+              style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: '0.85rem' }}
+            >
+              KIRAN: 1800-599-0019
+            </a>
+            <a 
+              href="tel:912227546669" 
+              style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: '0.85rem' }}
+            >
+              AASRA: 91-22-27546669
+            </a>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', margin: '0.5rem 0 0 0' }}>
+              24/7 Crisis Support
             </p>
           </div>
         </div>
@@ -128,33 +166,13 @@ function Footer() {
         paddingTop: '1rem',
         textAlign: 'center'
       }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          maxWidth: '1200px',
-          margin: '0 auto'
+        <p style={{
+          color: 'rgba(255,255,255,0.6)',
+          fontSize: '0.8rem',
+          margin: 0
         }}>
-          <p style={{
-            color: 'rgba(255,255,255,0.6)',
-            fontSize: '0.8rem',
-            margin: 0
-          }}>
-            © 2025 EhteCounseling. All rights reserved.
-          </p>
-          
-          {/* Emergency Notice */}
-          <p style={{
-            color: '#fbbf24',
-            fontSize: '0.8rem',
-            margin: 0,
-            fontWeight: '500'
-          }}>
-            Emergency? Call 112 (National Emergency) or 1056 (Mental Health Helpline)
-          </p>
-        </div>
+          © 2025 FeelingsShare. Peer Support Platform. All rights reserved.
+        </p>
       </div>
     </footer>
   );

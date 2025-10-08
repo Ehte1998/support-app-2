@@ -45,7 +45,7 @@ function UserLoginForm({ onSwitchToRegister }) {
             Welcome Back
           </h1>
           <p style={{ color: '#6b7280' }}>
-            Sign in to access your counseling sessions
+            Sign in to continue sharing your feelings
           </p>
         </div>
 
@@ -144,7 +144,7 @@ function UserLoginForm({ onSwitchToRegister }) {
           color: '#6b7280',
           textAlign: 'center'
         }}>
-          Your account keeps your sessions private and secure
+          Your account keeps your conversations private and secure
         </div>
       </div>
     </div>

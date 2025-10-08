@@ -45,7 +45,7 @@ function LoginForm() {
             Admin Login
           </h1>
           <p style={{ color: '#6b7280' }}>
-            Access the counselor dashboard
+            Access the supporter dashboard
           </p>
         </div>
 
