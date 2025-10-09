@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
 
-// Get API URL from environment variables
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
   const [customAmount, setCustomAmount] = useState('')
   const [selectedAmount, setSelectedAmount] = useState(2000)
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('upi') // Default to UPI
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('upi') // DEFAULT SET HERE
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [customerDetails, setCustomerDetails] = useState({
@@ -17,69 +16,101 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 
   const predefinedAmounts = [500, 1000, 2000, 5000, 10000]
 
-  // Load PayPal SDK dynamically
+  // Debug: Log state changes
   useEffect(() => {
-    if (selectedPaymentMethod === 'paypal') {
-      const script = document.createElement('script')
-      script.src = `https://www.paypal.com/sdk/js?client-id=${import.meta.env.VITE_PAYPAL_CLIENT_ID}&currency=USD`
-      script.async = true
-      document.body.appendChild(script)
-
-      return () => {
-        if (document.body.contains(script)) {
-          document.body.removeChild(script)
-        }
-      }
-    }
+    console.log('🔍 Payment Method Selected:', selectedPaymentMethod)
   }, [selectedPaymentMethod])
+
+  useEffect(() => {
+    console.log('🔍 Customer Details:', customerDetails)
+  }, [customerDetails])
 
   const initiatePayment = async (amount) => {
     setLoading(true)
     setMessage('')
 
+    // DEBUG LOGS
+    console.log('=== PAYMENT DEBUG START ===')
+    console.log('📤 Sending to API:', {
+      amount: amount,
+      messageId: messageId,
+      paymentMethod: selectedPaymentMethod,
+      customerDetails: customerDetails
+    })
+    console.log('🌐 API URL:', API_URL)
+    console.log('=== PAYMENT DEBUG END ===')
+
     try {
+      // Validate payment method
+      if (!selectedPaymentMethod) {
+        setMessage('❌ Please select a payment method')
+        setLoading(false)
+        return
+      }
+
       // Validate customer details for UPI/GPay
       if ((selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') && 
           (!customerDetails.name || !customerDetails.email || !customerDetails.phone)) {
-        setMessage('Please fill in all customer details for UPI/GPay payment')
+        setMessage('❌ Please fill in all customer details for UPI/GPay payment')
         setLoading(false)
         return
       }
 
       // Create payment order
+      const requestBody = {
+        amount: amount,
+        messageId: messageId,
+        paymentMethod: selectedPaymentMethod,
+        customerDetails: selectedPaymentMethod === 'paypal' ? {} : customerDetails
+      }
+
+      console.log('📡 Making API request...')
+      console.log('Request Body:', JSON.stringify(requestBody, null, 2))
+
       const orderResponse = await fetch(`${API_URL}/api/create-payment-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          amount: amount,
-          messageId: messageId,
-          paymentMethod: selectedPaymentMethod,
-          customerDetails: selectedPaymentMethod === 'paypal' ? {} : customerDetails
-        })
+        body: JSON.stringify(requestBody)
       })
 
-      const orderData = await orderResponse.json()
+      console.log('📥 Response Status:', orderResponse.status)
+      console.log('📥 Response OK:', orderResponse.ok)
+
+      const responseText = await orderResponse.text()
+      console.log('📥 Raw Response:', responseText)
+
+      let orderData
+      try {
+        orderData = JSON.parse(responseText)
+        console.log('📥 Parsed Response:', orderData)
+      } catch (e) {
+        console.error('❌ JSON Parse Error:', e)
+        throw new Error('Invalid response from server')
+      }
 
       if (!orderData.success) {
+        console.error('❌ API Error:', orderData.error)
         throw new Error(orderData.error || 'Failed to create payment order')
       }
 
+      console.log('✅ Payment order created successfully')
+
       // Handle PayPal Payment
       if (selectedPaymentMethod === 'paypal') {
-        // Redirect to PayPal approval URL
         if (orderData.approvalUrl) {
+          console.log('🔗 Redirecting to PayPal:', orderData.approvalUrl)
           window.location.href = orderData.approvalUrl
         } else {
           throw new Error('PayPal approval URL not found')
         }
       }
       
-      // Handle UPI/GPay Payment (via Cashfree)
+      // Handle UPI/GPay Payment
       else if (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') {
-        // Redirect to Cashfree payment page
         if (orderData.paymentLink) {
+          console.log('🔗 Redirecting to Cashfree:', orderData.paymentLink)
           window.location.href = orderData.paymentLink
         } else {
           throw new Error('Payment link not found')
@@ -87,8 +118,9 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
       }
 
     } catch (error) {
-      setMessage(error.message || 'Payment failed. Please try again.')
-      console.error('Payment error:', error)
+      console.error('💥 Payment Error:', error)
+      console.error('💥 Error Stack:', error.stack)
+      setMessage(`❌ ${error.message || 'Payment failed. Please try again.'}`)
       setLoading(false)
     }
   }
@@ -106,13 +138,17 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
   const handlePayment = () => {
     const amount = customAmount ? parseInt(customAmount) : selectedAmount
     
+    console.log('🎯 Payment Button Clicked')
+    console.log('Amount:', amount)
+    console.log('Payment Method:', selectedPaymentMethod)
+    
     if (!amount || amount < 1) {
-      setMessage('Please enter a valid amount')
+      setMessage('❌ Please enter a valid amount')
       return
     }
 
     if (amount > 100000) {
-      setMessage('Maximum amount is ₹1,00,000')
+      setMessage('❌ Maximum amount is ₹1,00,000')
       return
     }
 
@@ -163,23 +199,27 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         padding: '3rem',
         maxWidth: '600px',
         width: '100%',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
       }}>
+        {/* Debug Info */}
+        <div style={{
+          background: '#f3f4f6',
+          border: '1px solid #d1d5db',
+          borderRadius: '0.5rem',
+          padding: '1rem',
+          marginBottom: '1.5rem',
+          fontSize: '0.75rem',
+          fontFamily: 'monospace'
+        }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>🐛 DEBUG INFO:</div>
+          <div>Selected Method: <strong>{selectedPaymentMethod || 'NONE'}</strong></div>
+          <div>Amount: ₹{currentAmount || 0}</div>
+          <div>Message ID: {messageId || 'NONE'}</div>
+          <div>API URL: {API_URL}</div>
+        </div>
+
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            background: 'linear-gradient(135deg, #10b981, #059669)',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 1rem',
-            fontSize: '2rem'
-          }}>
-            💚
-          </div>
           <h2 style={{
             fontSize: '1.75rem',
             fontWeight: 'bold',
@@ -191,10 +231,9 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
           <p style={{
             color: '#6b7280',
             fontSize: '1rem',
-            lineHeight: '1.6',
             margin: 0
           }}>
-            Your contribution helps keep our peer support platform running
+            Your contribution helps keep peer support running
           </p>
         </div>
 
@@ -205,9 +244,9 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             borderRadius: '0.5rem',
             marginBottom: '1.5rem',
             textAlign: 'center',
-            background: message.includes('successful') || message.includes('details') ? '#fef3c7' : '#fef2f2',
-            color: message.includes('successful') || message.includes('details') ? '#92400e' : '#991b1b',
-            border: `1px solid ${message.includes('successful') || message.includes('details') ? '#fed7aa' : '#fecaca'}`
+            background: message.includes('✅') ? '#dcfce7' : '#fef2f2',
+            color: message.includes('✅') ? '#166534' : '#991b1b',
+            border: `1px solid ${message.includes('✅') ? '#bbf7d0' : '#fecaca'}`
           }}>
             {message}
           </div>
@@ -221,7 +260,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             color: '#374151',
             marginBottom: '1rem'
           }}>
-            Choose Payment Method:
+            1️⃣ Choose Payment Method:
           </h3>
 
           <div style={{
@@ -233,7 +272,10 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             {paymentMethods.map((method) => (
               <button
                 key={method.id}
-                onClick={() => setSelectedPaymentMethod(method.id)}
+                onClick={() => {
+                  console.log('🎯 Payment method changed to:', method.id)
+                  setSelectedPaymentMethod(method.id)
+                }}
                 disabled={loading}
                 style={{
                   padding: '1rem',
@@ -292,7 +334,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               color: '#374151',
               marginBottom: '1rem'
             }}>
-              Your Details:
+              2️⃣ Your Details:
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <input
@@ -348,10 +390,9 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             color: '#374151',
             marginBottom: '1rem'
           }}>
-            Choose Amount:
+            {(selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') ? '3️⃣' : '2️⃣'} Choose Amount:
           </h3>
 
-          {/* Predefined Amounts */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
@@ -381,7 +422,6 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             ))}
           </div>
 
-          {/* Custom Amount */}
           <div>
             <label style={{
               display: 'block',
@@ -439,34 +479,13 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               fontSize: '1rem',
               fontWeight: '600',
               cursor: loading || !currentAmount || currentAmount < 1 ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem'
+              transition: 'all 0.2s'
             }}
           >
-            {loading ? (
-              <>
-                <div className="loading-spinner" style={{
-                  width: '20px',
-                  height: '20px',
-                  border: '2px solid transparent',
-                  borderTop: '2px solid white',
-                  borderRadius: '50%'
-                }} />
-                Processing...
-              </>
-            ) : (
-              <>
-                {selectedPaymentMethod === 'paypal' ? '💙' : 
-                 selectedPaymentMethod === 'gpay' ? '🟢' : '💳'} 
-                {' '}Pay ₹{currentAmount || 0}
-                {selectedPaymentMethod === 'paypal' && ' (via PayPal)'}
-                {selectedPaymentMethod === 'upi' && ' (via UPI)'}
-                {selectedPaymentMethod === 'gpay' && ' (via GPay)'}
-              </>
-            )}
+            {loading ? 'Processing...' : `💳 Pay ₹${currentAmount || 0} via ${
+              selectedPaymentMethod === 'paypal' ? 'PayPal' :
+              selectedPaymentMethod === 'gpay' ? 'GPay' : 'UPI'
+            }`}
           </button>
 
           <button
@@ -481,47 +500,11 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               borderRadius: '0.5rem',
               fontSize: '0.875rem',
               fontWeight: '500',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s'
+              cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >
             Skip Payment
           </button>
-        </div>
-
-        {/* Payment Info */}
-        <div style={{
-          marginTop: '2rem',
-          padding: '1rem',
-          background: '#f9fafb',
-          borderRadius: '0.5rem',
-          border: '1px solid #e5e7eb'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            marginBottom: '0.5rem'
-          }}>
-            <span style={{ fontSize: '1rem' }}>🔒</span>
-            <span style={{
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              color: '#374151'
-            }}>
-              Secure Payment
-            </span>
-          </div>
-          <p style={{
-            fontSize: '0.75rem',
-            color: '#6b7280',
-            margin: 0,
-            lineHeight: '1.4'
-          }}>
-            {selectedPaymentMethod === 'paypal' 
-              ? 'Payments processed securely through PayPal. We never store your payment details.'
-              : 'Payments processed securely through Cashfree. All UPI apps supported including GPay, PhonePe, Paytm.'}
-          </p>
         </div>
       </div>
     </div>
