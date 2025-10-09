@@ -5,7 +5,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
   const [customAmount, setCustomAmount] = useState('')
   const [selectedAmount, setSelectedAmount] = useState(2000)
-  // CRITICAL FIX: Explicitly set default value
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('upi')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -15,6 +14,11 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
     phone: ''
   })
 
+  // DEBUG: Monitor payment method changes
+  useEffect(() => {
+    console.log('🔍 [PaymentInterface] Payment method state:', selectedPaymentMethod)
+  }, [selectedPaymentMethod])
+
   const predefinedAmounts = [500, 1000, 2000, 5000, 10000]
 
   const initiatePayment = async (amount) => {
@@ -22,54 +26,50 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
     setMessage('')
 
     try {
-      // CRITICAL: Ensure paymentMethod is set
-      if (!selectedPaymentMethod) {
-        console.error('❌ Payment method is not set!')
+      // CRITICAL VALIDATION
+      console.log('💰 [PaymentInterface] Initiating payment:')
+      console.log('   Amount:', amount)
+      console.log('   Message ID:', messageId)
+      console.log('   Payment Method:', selectedPaymentMethod)
+      console.log('   Customer Details:', customerDetails)
+
+      if (!selectedPaymentMethod || selectedPaymentMethod === '') {
+        console.error('❌ Payment method is empty!')
         setMessage('Please select a payment method')
         setLoading(false)
         return
       }
 
       // Validate customer details for UPI/GPay
-      if ((selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay')) {
+      if (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') {
         if (!customerDetails.name || !customerDetails.email || !customerDetails.phone) {
           setMessage('Please fill in all customer details')
           setLoading(false)
           return
         }
         
-        // Validate phone number
-        if (customerDetails.phone.length !== 10 || !/^\d+$/.test(customerDetails.phone)) {
+        if (customerDetails.phone.length !== 10) {
           setMessage('Please enter a valid 10-digit phone number')
           setLoading(false)
           return
         }
-        
-        // Validate email
-        if (!customerDetails.email.includes('@')) {
-          setMessage('Please enter a valid email address')
-          setLoading(false)
-          return
-        }
       }
 
-      // Prepare request body - EXPLICITLY include all fields
+      // Construct request body with EXPLICIT values
       const requestBody = {
-        amount: Number(amount),
+        amount: parseInt(amount),
         messageId: String(messageId || ''),
-        paymentMethod: String(selectedPaymentMethod), // FORCE string type
-        customerDetails: (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') 
-          ? {
-              name: String(customerDetails.name),
-              email: String(customerDetails.email),
-              phone: String(customerDetails.phone)
-            }
-          : {}
+        paymentMethod: String(selectedPaymentMethod), // Force string type
+        customerDetails: (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') ? {
+          name: String(customerDetails.name).trim(),
+          email: String(customerDetails.email).trim(),
+          phone: String(customerDetails.phone).trim()
+        } : {}
       }
 
-      console.log('📤 Sending payment request:', requestBody)
+      console.log('📤 [PaymentInterface] Request body:', JSON.stringify(requestBody, null, 2))
 
-      // Make API call
+      // Create payment order
       const orderResponse = await fetch(`${API_URL}/api/create-payment-order`, {
         method: 'POST',
         headers: {
@@ -78,11 +78,11 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         body: JSON.stringify(requestBody)
       })
 
-      console.log('📥 Response status:', orderResponse.status)
+      console.log('📥 [PaymentInterface] Response status:', orderResponse.status)
 
       if (!orderResponse.ok) {
         const errorText = await orderResponse.text()
-        console.error('❌ API Error Response:', errorText)
+        console.error('❌ API Error:', errorText)
         let errorData
         try {
           errorData = JSON.parse(errorText)
@@ -93,7 +93,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
       }
 
       const orderData = await orderResponse.json()
-      console.log('✅ Order created:', orderData)
+      console.log('✅ [PaymentInterface] Order created:', orderData)
 
       if (!orderData.success) {
         throw new Error(orderData.error || 'Failed to create payment order')
@@ -102,9 +102,10 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
       // Handle PayPal Payment
       if (selectedPaymentMethod === 'paypal') {
         if (orderData.approvalUrl) {
-          console.log('🔗 Redirecting to PayPal...')
+          console.log('🔗 Redirecting to PayPal:', orderData.approvalUrl)
           window.location.href = orderData.approvalUrl
         } else {
+          console.error('❌ No PayPal approval URL in response:', orderData)
           throw new Error('PayPal approval URL not found')
         }
       }
@@ -112,15 +113,16 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
       // Handle UPI/GPay Payment
       else if (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') {
         if (orderData.paymentLink) {
-          console.log('🔗 Redirecting to Cashfree...')
+          console.log('🔗 Redirecting to payment gateway:', orderData.paymentLink)
           window.location.href = orderData.paymentLink
         } else {
+          console.error('❌ No payment link in response:', orderData)
           throw new Error('Payment link not found')
         }
       }
 
     } catch (error) {
-      console.error('💥 Payment error:', error)
+      console.error('💥 [PaymentInterface] Payment error:', error)
       setMessage(error.message || 'Payment failed. Please try again.')
       setLoading(false)
     }
@@ -138,6 +140,10 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 
   const handlePayment = () => {
     const amount = customAmount ? parseInt(customAmount) : selectedAmount
+    
+    console.log('🔘 [PaymentInterface] Pay button clicked')
+    console.log('   Selected amount:', amount)
+    console.log('   Selected method:', selectedPaymentMethod)
     
     if (!amount || amount < 1) {
       setMessage('Please enter a valid amount')
@@ -263,7 +269,10 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             {paymentMethods.map((method) => (
               <button
                 key={method.id}
-                onClick={() => setSelectedPaymentMethod(method.id)}
+                onClick={() => {
+                  console.log('🔄 Changing payment method to:', method.id)
+                  setSelectedPaymentMethod(method.id)
+                }}
                 disabled={loading}
                 style={{
                   padding: '1rem',
