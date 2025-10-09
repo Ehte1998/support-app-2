@@ -538,14 +538,24 @@ function RatingComponent({ onRatingSubmit }) {
 function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
   const [customAmount, setCustomAmount] = useState('')
   const [selectedAmount, setSelectedAmount] = useState(2000)
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('upi') // NEW!
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('upi')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
-  const [customerDetails, setCustomerDetails] = useState({ // NEW!
+  const [customerDetails, setCustomerDetails] = useState({
     name: '',
     email: '',
     phone: ''
   })
+
+  // DEBUG: Log component mount and state changes
+  useEffect(() => {
+    console.log('💳 PaymentInterface mounted with messageId:', messageId)
+    console.log('💳 Initial payment method:', selectedPaymentMethod)
+  }, [])
+
+  useEffect(() => {
+    console.log('🔍 Payment method changed to:', selectedPaymentMethod)
+  }, [selectedPaymentMethod])
 
   const predefinedAmounts = [500, 1000, 2000, 5000, 10000]
 
@@ -554,30 +564,65 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
     setMessage('')
 
     try {
+      // VALIDATION: Check payment method is set
+      console.log('🔍 Starting payment with method:', selectedPaymentMethod)
+      
+      if (!selectedPaymentMethod || selectedPaymentMethod === '') {
+        console.error('❌ Payment method is empty!')
+        setMessage('Please select a payment method')
+        setLoading(false)
+        return
+      }
+
       // Validate customer details for UPI/GPay
-      if ((selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay')) {
+      if (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') {
         if (!customerDetails.name || !customerDetails.email || !customerDetails.phone) {
           setMessage('Please fill in all customer details')
           setLoading(false)
           return
         }
+        
+        if (customerDetails.phone.length !== 10) {
+          setMessage('Please enter a valid 10-digit phone number')
+          setLoading(false)
+          return
+        }
       }
 
-      // Create payment order with paymentMethod
+      // CRITICAL: Construct request body with explicit values
+      const requestBody = {
+        amount: parseInt(amount),
+        messageId: messageId || '',
+        paymentMethod: selectedPaymentMethod, // Must be 'upi', 'gpay', or 'paypal'
+        customerDetails: (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') ? {
+          name: customerDetails.name.trim(),
+          email: customerDetails.email.trim(),
+          phone: customerDetails.phone.trim()
+        } : undefined
+      }
+
+      // DEBUG: Log what we're sending
+      console.log('📤 Sending payment request:', JSON.stringify(requestBody, null, 2))
+
+      // Create payment order
       const orderResponse = await fetch(`${API_URL}/api/create-payment-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          amount: amount,
-          messageId: messageId,
-          paymentMethod: selectedPaymentMethod, // CRITICAL FIX!
-          customerDetails: customerDetails
-        })
+        body: JSON.stringify(requestBody)
       })
 
+      console.log('📥 Response status:', orderResponse.status)
+
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json()
+        console.error('❌ Server error:', errorData)
+        throw new Error(errorData.error || 'Failed to create payment order')
+      }
+
       const orderData = await orderResponse.json()
+      console.log('✅ Order created:', orderData)
 
       if (!orderData.success) {
         throw new Error(orderData.error || 'Failed to create payment order')
@@ -586,6 +631,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
       // Handle PayPal Payment
       if (selectedPaymentMethod === 'paypal') {
         if (orderData.approvalUrl) {
+          console.log('🔗 Redirecting to PayPal...')
           window.location.href = orderData.approvalUrl
         } else {
           throw new Error('PayPal approval URL not found')
@@ -595,6 +641,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
       // Handle UPI/GPay Payment
       else if (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') {
         if (orderData.paymentLink) {
+          console.log('🔗 Redirecting to payment gateway...')
           window.location.href = orderData.paymentLink
         } else {
           throw new Error('Payment link not found')
@@ -602,8 +649,8 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
       }
 
     } catch (error) {
+      console.error('💥 Payment error:', error)
       setMessage(error.message || 'Payment failed. Please try again.')
-      console.error('Payment error:', error)
       setLoading(false)
     }
   }
@@ -620,6 +667,10 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 
   const handlePayment = () => {
     const amount = customAmount ? parseInt(customAmount) : selectedAmount
+    
+    console.log('💰 Payment button clicked')
+    console.log('   Amount:', amount)
+    console.log('   Method:', selectedPaymentMethod)
     
     if (!amount || amount < 1) {
       setMessage('Please enter a valid amount')
@@ -742,7 +793,12 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             {paymentMethods.map((method) => (
               <button
                 key={method.id}
-                onClick={() => setSelectedPaymentMethod(method.id)}
+                onClick={() => {
+                  console.log('🔄 Payment method button clicked:', method.id)
+                  console.log('   Previous value:', selectedPaymentMethod)
+                  setSelectedPaymentMethod(method.id)
+                  console.log('   New value set to:', method.id)
+                }}
                 disabled={loading}
                 style={{
                   padding: '1rem 0.5rem',
