@@ -438,7 +438,7 @@ function RatingComponent({ onRatingSubmit }) {
         marginBottom: '1rem',
         textAlign: 'center'
       }}>
-        How was your counseling experience?
+        How was your conversation experience?
       </div>
 
       <div style={{
@@ -532,32 +532,38 @@ function RatingComponent({ onRatingSubmit }) {
   )
 }
 
+// REPLACE THE ENTIRE PaymentInterface FUNCTION WITH THIS:
+// (Delete from line ~605 to ~800 and paste this instead)
+
 function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
   const [customAmount, setCustomAmount] = useState('')
   const [selectedAmount, setSelectedAmount] = useState(2000)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('upi') // NEW!
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [customerDetails, setCustomerDetails] = useState({ // NEW!
+    name: '',
+    email: '',
+    phone: ''
+  })
 
   const predefinedAmounts = [500, 1000, 2000, 5000, 10000]
-
-  useEffect(() => {
-    const script = document.createElement('script')
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    script.async = true
-    document.body.appendChild(script)
-
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script)
-      }
-    }
-  }, [])
 
   const initiatePayment = async (amount) => {
     setLoading(true)
     setMessage('')
 
     try {
+      // Validate customer details for UPI/GPay
+      if ((selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay')) {
+        if (!customerDetails.name || !customerDetails.email || !customerDetails.phone) {
+          setMessage('Please fill in all customer details')
+          setLoading(false)
+          return
+        }
+      }
+
+      // Create payment order with paymentMethod
       const orderResponse = await fetch(`${API_URL}/api/create-payment-order`, {
         method: 'POST',
         headers: {
@@ -565,7 +571,9 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         },
         body: JSON.stringify({
           amount: amount,
-          messageId: messageId
+          messageId: messageId,
+          paymentMethod: selectedPaymentMethod, // CRITICAL FIX!
+          customerDetails: customerDetails
         })
       })
 
@@ -575,69 +583,27 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         throw new Error(orderData.error || 'Failed to create payment order')
       }
 
-      const options = {
-        key: orderData.keyId,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: 'Support Counseling',
-        description: 'Thank you for supporting our platform',
-        order_id: orderData.orderId,
-        handler: async function (response) {
-          try {
-            const verificationResponse = await fetch(`${API_URL}/api/verify-payment`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                messageId: messageId,
-                amount: orderData.amount
-              })
-            })
-
-            const verificationData = await verificationResponse.json()
-
-            if (verificationData.success) {
-              setMessage('Payment successful! Thank you for your support.')
-              setTimeout(() => {
-                onPaymentComplete(amount)
-              }, 2000)
-            } else {
-              setMessage('Payment verification failed. Please contact support.')
-            }
-          } catch (error) {
-            setMessage('Payment verification failed. Please contact support.')
-            console.error('Payment verification error:', error)
-          }
-        },
-        prefill: {
-          name: 'Anonymous User',
-        },
-        theme: {
-          color: '#3b82f6'
-        },
-        modal: {
-          ondismiss: function() {
-            setLoading(false)
-            setMessage('Payment cancelled')
-          }
+      // Handle PayPal Payment
+      if (selectedPaymentMethod === 'paypal') {
+        if (orderData.approvalUrl) {
+          window.location.href = orderData.approvalUrl
+        } else {
+          throw new Error('PayPal approval URL not found')
+        }
+      }
+      
+      // Handle UPI/GPay Payment
+      else if (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') {
+        if (orderData.paymentLink) {
+          window.location.href = orderData.paymentLink
+        } else {
+          throw new Error('Payment link not found')
         }
       }
 
-      if (window.Razorpay) {
-        const rzp1 = new window.Razorpay(options)
-        rzp1.open()
-      } else {
-        throw new Error('Razorpay not loaded')
-      }
-
     } catch (error) {
-      setMessage('Payment failed. Please try again.')
+      setMessage(error.message || 'Payment failed. Please try again.')
       console.error('Payment error:', error)
-    } finally {
       setLoading(false)
     }
   }
@@ -670,6 +636,30 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 
   const currentAmount = customAmount ? parseInt(customAmount) : selectedAmount
 
+  const paymentMethods = [
+    { 
+      id: 'upi', 
+      name: 'UPI', 
+      icon: '💳', 
+      color: '#5f259f',
+      description: 'PhonePe, Paytm, BHIM',
+    },
+    { 
+      id: 'gpay', 
+      name: 'Google Pay', 
+      icon: '🟢', 
+      color: '#1a73e8',
+      description: 'Google Pay UPI',
+    },
+    { 
+      id: 'paypal', 
+      name: 'PayPal', 
+      icon: '💙', 
+      color: '#0070ba',
+      description: 'International',
+    }
+  ]
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -685,7 +675,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         padding: '3rem',
         maxWidth: '500px',
         width: '100%',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{
@@ -707,15 +697,14 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             color: '#1f2937',
             margin: '0 0 0.5rem 0'
           }}>
-            Conversation Ended!
+            Support Our Platform
           </h2>
           <p style={{
             color: '#6b7280',
             fontSize: '1rem',
-            lineHeight: '1.6',
             margin: 0
           }}>
-            We hope our conversation was helpful. Your support helps us continue providing peer support to those in need.
+            Your contribution helps us continue
           </p>
         </div>
 
@@ -724,26 +713,139 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             padding: '1rem',
             borderRadius: '0.5rem',
             marginBottom: '1.5rem',
-            textAlign: 'center',
-            background: message.includes('successful') ? '#dcfce7' : 
-                      message.includes('failed') || message.includes('cancelled') ? '#fef2f2' : '#fef3c7',
-            color: message.includes('successful') ? '#166534' : 
-                  message.includes('failed') || message.includes('cancelled') ? '#991b1b' : '#92400e',
-            border: `1px solid ${message.includes('successful') ? '#bbf7d0' : 
-                                message.includes('failed') || message.includes('cancelled') ? '#fecaca' : '#fed7aa'}`
+            background: message.includes('successful') ? '#dcfce7' : '#fef2f2',
+            color: message.includes('successful') ? '#166534' : '#991b1b',
+            border: `1px solid ${message.includes('successful') ? '#bbf7d0' : '#fecaca'}`,
+            fontSize: '0.875rem'
           }}>
             {message}
           </div>
         )}
 
+        {/* Payment Method Selection */}
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{
-            fontSize: '1.1rem',
+            fontSize: '1rem',
             fontWeight: '600',
             color: '#374151',
             marginBottom: '1rem'
           }}>
-            Choose an amount to support our platform:
+            Choose Payment Method:
+          </h3>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '0.75rem',
+            marginBottom: '1.5rem'
+          }}>
+            {paymentMethods.map((method) => (
+              <button
+                key={method.id}
+                onClick={() => setSelectedPaymentMethod(method.id)}
+                disabled={loading}
+                style={{
+                  padding: '1rem 0.5rem',
+                  border: selectedPaymentMethod === method.id 
+                    ? `3px solid ${method.color}` 
+                    : '2px solid #e5e7eb',
+                  borderRadius: '0.75rem',
+                  background: selectedPaymentMethod === method.id 
+                    ? `${method.color}10` 
+                    : 'white',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{method.icon}</div>
+                <div style={{
+                  fontWeight: '600',
+                  color: selectedPaymentMethod === method.id ? method.color : '#374151',
+                  fontSize: '0.85rem',
+                  marginBottom: '0.25rem'
+                }}>
+                  {method.name}
+                </div>
+                <div style={{
+                  fontSize: '0.65rem',
+                  color: '#6b7280'
+                }}>
+                  {method.description}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Customer Details for UPI/GPay */}
+        {(selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') && (
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              color: '#374151',
+              marginBottom: '1rem'
+            }}>
+              Your Details:
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <input
+                type="text"
+                value={customerDetails.name}
+                onChange={(e) => setCustomerDetails(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Full Name *"
+                required
+                style={{
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem'
+                }}
+              />
+              <input
+                type="email"
+                value={customerDetails.email}
+                onChange={(e) => setCustomerDetails(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Email Address *"
+                required
+                style={{
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem'
+                }}
+              />
+              <input
+                type="tel"
+                value={customerDetails.phone}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 10)
+                  setCustomerDetails(prev => ({ ...prev, phone: value }))
+                }}
+                placeholder="Phone (10 digits) *"
+                required
+                maxLength="10"
+                style={{
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem'
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Amount Selection */}
+        <div style={{ marginBottom: '2rem' }}>
+          <h3 style={{
+            fontSize: '1rem',
+            fontWeight: '600',
+            color: '#374151',
+            marginBottom: '1rem'
+          }}>
+            Choose Amount:
           </h3>
 
           <div style={{
@@ -756,13 +858,14 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               <button
                 key={amount}
                 onClick={() => handlePredefinedAmount(amount)}
+                disabled={loading}
                 style={{
                   padding: '1rem 0.5rem',
                   border: selectedAmount === amount ? '2px solid #3b82f6' : '1px solid #d1d5db',
                   borderRadius: '0.5rem',
                   background: selectedAmount === amount ? '#eff6ff' : 'white',
                   color: selectedAmount === amount ? '#1d4ed8' : '#374151',
-                  cursor: 'pointer',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                   fontSize: '0.875rem',
                   fontWeight: '500',
                   textAlign: 'center',
@@ -782,7 +885,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               color: '#374151',
               marginBottom: '0.5rem'
             }}>
-              Or enter a custom amount:
+              Or enter custom amount:
             </label>
             <div style={{ position: 'relative' }}>
               <span style={{
@@ -800,6 +903,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
                 value={customAmount}
                 onChange={(e) => handleCustomAmount(e.target.value)}
                 placeholder="Enter amount"
+                disabled={loading}
                 min="1"
                 max="100000"
                 style={{
@@ -815,6 +919,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
           </div>
         </div>
 
+        {/* Action Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <button
             onClick={handlePayment}
@@ -829,14 +934,13 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               fontSize: '1rem',
               fontWeight: '600',
               cursor: loading || !currentAmount || currentAmount < 1 ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem'
+              transition: 'all 0.2s'
             }}
           >
-            {loading ? 'Processing...' : `💳 Pay ₹${currentAmount || 0}`}
+            {loading ? 'Processing...' : `Pay ₹${currentAmount || 0} via ${
+              selectedPaymentMethod === 'paypal' ? 'PayPal' :
+              selectedPaymentMethod === 'gpay' ? 'GPay' : 'UPI'
+            }`}
           </button>
 
           <button
@@ -851,8 +955,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               borderRadius: '0.5rem',
               fontSize: '0.875rem',
               fontWeight: '500',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s'
+              cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >
             Skip Payment
