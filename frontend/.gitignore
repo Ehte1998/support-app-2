@@ -25,3 +25,4 @@ dist-ssr
 .env
 uploads/
 my app credentials.txt
+../backend/
