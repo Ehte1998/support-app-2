@@ -5,32 +5,48 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
   const [customAmount, setCustomAmount] = useState('')
-  const [selectedAmount, setSelectedAmount] = useState(100)
+  const [selectedAmount, setSelectedAmount] = useState(2000)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('upi') // Default to UPI
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [customerDetails, setCustomerDetails] = useState({
+    name: '',
+    email: '',
+    phone: ''
+  })
 
   const predefinedAmounts = [500, 1000, 2000, 5000, 10000]
 
-  // Load Razorpay script
+  // Load PayPal SDK dynamically
   useEffect(() => {
-    const script = document.createElement('script')
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    script.async = true
-    document.body.appendChild(script)
+    if (selectedPaymentMethod === 'paypal') {
+      const script = document.createElement('script')
+      script.src = `https://www.paypal.com/sdk/js?client-id=${import.meta.env.VITE_PAYPAL_CLIENT_ID}&currency=USD`
+      script.async = true
+      document.body.appendChild(script)
 
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script)
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script)
+        }
       }
     }
-  }, [])
+  }, [selectedPaymentMethod])
 
   const initiatePayment = async (amount) => {
     setLoading(true)
     setMessage('')
 
     try {
-      // Create order
+      // Validate customer details for UPI/GPay
+      if ((selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') && 
+          (!customerDetails.name || !customerDetails.email || !customerDetails.phone)) {
+        setMessage('Please fill in all customer details for UPI/GPay payment')
+        setLoading(false)
+        return
+      }
+
+      // Create payment order
       const orderResponse = await fetch(`${API_URL}/api/create-payment-order`, {
         method: 'POST',
         headers: {
@@ -38,7 +54,9 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         },
         body: JSON.stringify({
           amount: amount,
-          messageId: messageId
+          messageId: messageId,
+          paymentMethod: selectedPaymentMethod,
+          customerDetails: selectedPaymentMethod === 'paypal' ? {} : customerDetails
         })
       })
 
@@ -48,72 +66,29 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         throw new Error(orderData.error || 'Failed to create payment order')
       }
 
-      // Configure Razorpay options
-      const options = {
-        key: orderData.keyId,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: 'Support Counseling',
-        description: 'Thank you for supporting our platform',
-        order_id: orderData.orderId,
-        handler: async function (response) {
-          try {
-            // Verify payment
-            const verificationResponse = await fetch(`${API_URL}/api/verify-payment`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                messageId: messageId,
-                amount: orderData.amount
-              })
-            })
-
-            const verificationData = await verificationResponse.json()
-
-            if (verificationData.success) {
-              setMessage('Payment successful! Thank you for your support.')
-              setTimeout(() => {
-                onPaymentComplete(amount)
-              }, 2000)
-            } else {
-              setMessage('Payment verification failed. Please contact support.')
-            }
-          } catch (error) {
-            setMessage('Payment verification failed. Please contact support.')
-            console.error('Payment verification error:', error)
-          }
-        },
-        prefill: {
-          name: 'Anonymous User',
-        },
-        theme: {
-          color: '#3b82f6'
-        },
-        modal: {
-          ondismiss: function() {
-            setLoading(false)
-            setMessage('Payment cancelled')
-          }
+      // Handle PayPal Payment
+      if (selectedPaymentMethod === 'paypal') {
+        // Redirect to PayPal approval URL
+        if (orderData.approvalUrl) {
+          window.location.href = orderData.approvalUrl
+        } else {
+          throw new Error('PayPal approval URL not found')
+        }
+      }
+      
+      // Handle UPI/GPay Payment (via Cashfree)
+      else if (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') {
+        // Redirect to Cashfree payment page
+        if (orderData.paymentLink) {
+          window.location.href = orderData.paymentLink
+        } else {
+          throw new Error('Payment link not found')
         }
       }
 
-      // Open Razorpay checkout
-      if (window.Razorpay) {
-        const rzp1 = new window.Razorpay(options)
-        rzp1.open()
-      } else {
-        throw new Error('Razorpay not loaded')
-      }
-
     } catch (error) {
-      setMessage('Payment failed. Please try again.')
+      setMessage(error.message || 'Payment failed. Please try again.')
       console.error('Payment error:', error)
-    } finally {
       setLoading(false)
     }
   }
@@ -146,6 +121,33 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 
   const currentAmount = customAmount ? parseInt(customAmount) : selectedAmount
 
+  const paymentMethods = [
+    { 
+      id: 'upi', 
+      name: 'UPI', 
+      icon: '💳', 
+      color: '#5f259f',
+      description: 'Pay via any UPI app',
+      badge: 'Instant'
+    },
+    { 
+      id: 'gpay', 
+      name: 'Google Pay', 
+      icon: '🟢', 
+      color: '#1a73e8',
+      description: 'Google Pay / PhonePe / Paytm',
+      badge: 'Popular'
+    },
+    { 
+      id: 'paypal', 
+      name: 'PayPal', 
+      icon: '💙', 
+      color: '#0070ba',
+      description: 'International payments',
+      badge: 'Global'
+    }
+  ]
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -159,7 +161,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         background: 'white',
         borderRadius: '1rem',
         padding: '3rem',
-        maxWidth: '500px',
+        maxWidth: '600px',
         width: '100%',
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
       }}>
@@ -184,7 +186,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             color: '#1f2937',
             margin: '0 0 0.5rem 0'
           }}>
-            Conversation Complete!
+            Support Our Platform
           </h2>
           <p style={{
             color: '#6b7280',
@@ -192,7 +194,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             lineHeight: '1.6',
             margin: 0
           }}>
-            Thank you for sharing with us. Your contribution helps us keep this peer support platform running.
+            Your contribution helps keep our peer support platform running
           </p>
         </div>
 
@@ -203,26 +205,150 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             borderRadius: '0.5rem',
             marginBottom: '1.5rem',
             textAlign: 'center',
-            background: message.includes('successful') ? '#dcfce7' : 
-                       message.includes('failed') || message.includes('cancelled') ? '#fef2f2' : '#fef3c7',
-            color: message.includes('successful') ? '#166534' : 
-                   message.includes('failed') || message.includes('cancelled') ? '#991b1b' : '#92400e',
-            border: `1px solid ${message.includes('successful') ? '#bbf7d0' : 
-                                 message.includes('failed') || message.includes('cancelled') ? '#fecaca' : '#fed7aa'}`
+            background: message.includes('successful') || message.includes('details') ? '#fef3c7' : '#fef2f2',
+            color: message.includes('successful') || message.includes('details') ? '#92400e' : '#991b1b',
+            border: `1px solid ${message.includes('successful') || message.includes('details') ? '#fed7aa' : '#fecaca'}`
           }}>
             {message}
+          </div>
+        )}
+
+        {/* Payment Method Selection */}
+        <div style={{ marginBottom: '2rem' }}>
+          <h3 style={{
+            fontSize: '1rem',
+            fontWeight: '600',
+            color: '#374151',
+            marginBottom: '1rem'
+          }}>
+            Choose Payment Method:
+          </h3>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gap: '1rem',
+            marginBottom: '1.5rem'
+          }}>
+            {paymentMethods.map((method) => (
+              <button
+                key={method.id}
+                onClick={() => setSelectedPaymentMethod(method.id)}
+                disabled={loading}
+                style={{
+                  padding: '1rem',
+                  border: selectedPaymentMethod === method.id ? `3px solid ${method.color}` : '2px solid #e5e7eb',
+                  borderRadius: '0.75rem',
+                  background: selectedPaymentMethod === method.id ? `${method.color}15` : 'white',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  textAlign: 'center',
+                  position: 'relative',
+                  transition: 'all 0.2s',
+                  transform: selectedPaymentMethod === method.id ? 'scale(1.02)' : 'scale(1)'
+                }}
+              >
+                {method.badge && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-8px',
+                    right: '-8px',
+                    background: method.color,
+                    color: 'white',
+                    fontSize: '0.65rem',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '1rem',
+                    fontWeight: '600'
+                  }}>
+                    {method.badge}
+                  </div>
+                )}
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{method.icon}</div>
+                <div style={{
+                  fontWeight: '600',
+                  color: selectedPaymentMethod === method.id ? method.color : '#374151',
+                  marginBottom: '0.25rem',
+                  fontSize: '0.9rem'
+                }}>
+                  {method.name}
+                </div>
+                <div style={{
+                  fontSize: '0.7rem',
+                  color: '#6b7280',
+                  lineHeight: '1.2'
+                }}>
+                  {method.description}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Customer Details for UPI/GPay */}
+        {(selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') && (
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              color: '#374151',
+              marginBottom: '1rem'
+            }}>
+              Your Details:
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <input
+                type="text"
+                value={customerDetails.name}
+                onChange={(e) => setCustomerDetails(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Full Name *"
+                required
+                style={{
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem'
+                }}
+              />
+              <input
+                type="email"
+                value={customerDetails.email}
+                onChange={(e) => setCustomerDetails(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Email Address *"
+                required
+                style={{
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem'
+                }}
+              />
+              <input
+                type="tel"
+                value={customerDetails.phone}
+                onChange={(e) => setCustomerDetails(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Phone Number (10 digits) *"
+                required
+                maxLength="10"
+                pattern="[0-9]{10}"
+                style={{
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem'
+                }}
+              />
+            </div>
           </div>
         )}
 
         {/* Amount Selection */}
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{
-            fontSize: '1.1rem',
+            fontSize: '1rem',
             fontWeight: '600',
             color: '#374151',
             marginBottom: '1rem'
           }}>
-            Show your appreciation (optional):
+            Choose Amount:
           </h3>
 
           {/* Predefined Amounts */}
@@ -236,13 +362,14 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               <button
                 key={amount}
                 onClick={() => handlePredefinedAmount(amount)}
+                disabled={loading}
                 style={{
                   padding: '1rem 0.5rem',
                   border: selectedAmount === amount ? '2px solid #3b82f6' : '1px solid #d1d5db',
                   borderRadius: '0.5rem',
                   background: selectedAmount === amount ? '#eff6ff' : 'white',
                   color: selectedAmount === amount ? '#1d4ed8' : '#374151',
-                  cursor: 'pointer',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                   fontSize: '0.875rem',
                   fontWeight: '500',
                   textAlign: 'center',
@@ -263,7 +390,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               color: '#374151',
               marginBottom: '0.5rem'
             }}>
-              Or enter a custom amount:
+              Or enter custom amount:
             </label>
             <div style={{ position: 'relative' }}>
               <span style={{
@@ -281,6 +408,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
                 value={customAmount}
                 onChange={(e) => handleCustomAmount(e.target.value)}
                 placeholder="Enter amount"
+                disabled={loading}
                 min="1"
                 max="100000"
                 style={{
@@ -292,13 +420,6 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
                   background: customAmount ? '#eff6ff' : 'white'
                 }}
               />
-            </div>
-            <div style={{
-              fontSize: '0.75rem',
-              color: '#6b7280',
-              marginTop: '0.5rem'
-            }}>
-              Minimum ₹1, Maximum ₹1,00,000
             </div>
           </div>
         </div>
@@ -327,19 +448,23 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
           >
             {loading ? (
               <>
-                <div style={{
+                <div className="loading-spinner" style={{
                   width: '20px',
                   height: '20px',
                   border: '2px solid transparent',
                   borderTop: '2px solid white',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
+                  borderRadius: '50%'
                 }} />
                 Processing...
               </>
             ) : (
               <>
-                💙 Contribute ₹{currentAmount || 0}
+                {selectedPaymentMethod === 'paypal' ? '💙' : 
+                 selectedPaymentMethod === 'gpay' ? '🟢' : '💳'} 
+                {' '}Pay ₹{currentAmount || 0}
+                {selectedPaymentMethod === 'paypal' && ' (via PayPal)'}
+                {selectedPaymentMethod === 'upi' && ' (via UPI)'}
+                {selectedPaymentMethod === 'gpay' && ' (via GPay)'}
               </>
             )}
           </button>
@@ -364,7 +489,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
           </button>
         </div>
 
-        {/* Security Notice */}
+        {/* Payment Info */}
         <div style={{
           marginTop: '2rem',
           padding: '1rem',
@@ -384,7 +509,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               fontWeight: '500',
               color: '#374151'
             }}>
-              Secure Contribution
+              Secure Payment
             </span>
           </div>
           <p style={{
@@ -393,18 +518,11 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             margin: 0,
             lineHeight: '1.4'
           }}>
-            All contributions are processed securely through Razorpay. We never store your card details. 
-            his helps maintain our peer support platform.
+            {selectedPaymentMethod === 'paypal' 
+              ? 'Payments processed securely through PayPal. We never store your payment details.'
+              : 'Payments processed securely through Cashfree. All UPI apps supported including GPay, PhonePe, Paytm.'}
           </p>
         </div>
-
-        {/* Add spinning animation */}
-        <style jsx>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
       </div>
     </div>
   )

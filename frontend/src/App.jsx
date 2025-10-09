@@ -1,10 +1,11 @@
-// App.jsx - Updated with all pages including legal documents
+// App.jsx - Updated with payment status pages
 import { useState, useEffect } from 'react'
 import AdminDashboard from './AdminDashboard'
 import LoginForm from './LoginForm'
 import AboutUs from './AboutUs'
 import PricingDetails from './PricingDetails'
 import { TermsAndConditions, PrivacyPolicy, RefundPolicy, ContactUs } from './LegalPages'
+import { PaymentSuccess, PaymentFailed } from './PaymentStatus'
 import { AuthProvider, useAuth } from './AuthContext'
 import { UserAuthProvider } from './UserAuthContext'
 import AuthenticatedUserInterface from './AuthenticatedUserInterface'
@@ -56,8 +57,8 @@ function Navigation({ currentPage }) {
     background: 'rgba(255, 255, 255, 0.2)'
   }
 
-  // Don't show navigation on admin pages
-  if (currentPage === 'admin') {
+  // Don't show navigation on admin or payment pages
+  if (currentPage === 'admin' || currentPage === 'payment') {
     return null
   }
 
@@ -100,6 +101,8 @@ const isContactPage = urlParams.has('contact')
 const isTermsPage = urlParams.has('terms')
 const isPrivacyPage = urlParams.has('privacy')
 const isRefundPage = urlParams.has('refund')
+const isPaymentSuccessPage = urlParams.has('payment-success')
+const isPaymentFailedPage = urlParams.has('payment-failed') || urlParams.has('payment-cancel')
 
 // Main App Component with Authentication
 function AppContent() {
@@ -107,7 +110,28 @@ function AppContent() {
   const currentPage = isAdminMode ? 'admin' : 
                      isAboutPage ? 'about' : 
                      isPricingPage ? 'pricing' :
-                     isContactPage ? 'contact' : 'home'
+                     isContactPage ? 'contact' : 
+                     isPaymentSuccessPage || isPaymentFailedPage ? 'payment' : 'home'
+
+  // Handle payment success page
+  if (isPaymentSuccessPage) {
+    return (
+      <div>
+        <Navigation currentPage={currentPage} />
+        <PaymentSuccess />
+      </div>
+    )
+  }
+
+  // Handle payment failed/cancelled page
+  if (isPaymentFailedPage) {
+    return (
+      <div>
+        <Navigation currentPage={currentPage} />
+        <PaymentFailed />
+      </div>
+    )
+  }
 
   // Handle admin dashboard routing
   if (isAdminMode) {
