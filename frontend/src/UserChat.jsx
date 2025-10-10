@@ -1403,23 +1403,7 @@ function SimplifiedUserInterface({ user }) {
     scrollToBottom()
   }, [chatMessages])
 
-  // Handle payment return from Cashfree
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const paymentSuccess = urlParams.has('payment-success')
-    const orderId = urlParams.get('order_id')
-
-    if (paymentSuccess && orderId) {
-      console.log('🔍 Payment return detected:', { orderId })
-
-      // Verify the payment
-      verifyPayment(orderId)
-
-      // Clean up URL
-      window.history.replaceState({}, '', window.location.pathname)
-    }
-  }, [])
-
+  // ⬇️⬇️⬇️ DEFINE verifyPayment FIRST ⬇️⬇️⬇️
   const verifyPayment = async (orderId) => {
     try {
       console.log('==========================================')
@@ -1438,11 +1422,11 @@ function SimplifiedUserInterface({ user }) {
       console.log('  - lastPaymentAmount:', storedAmount)
       console.log('  - messageId from state:', messageId)
 
-      const paymentMethod = storedMethod || 'upi' // Fallback to upi
+      const paymentMethod = storedMethod || 'upi'
       const msgId = messageId || storedMessageId
 
       console.log('📤 Sending verification request with:')
-      console.log('  - paymentMethod:', paymentMethod) // ✅ Should show 'upi' or 'gpay'
+      console.log('  - paymentMethod:', paymentMethod)
       console.log('  - orderId:', orderId)
       console.log('  - messageId:', msgId)
 
@@ -1452,9 +1436,9 @@ function SimplifiedUserInterface({ user }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          paymentMethod: paymentMethod, // ✅ USE THE VARIABLE, NOT HARDCODED 'upi'
+          paymentMethod: paymentMethod,
           orderId: orderId,
-          messageId: msgId             // ✅ USE THE VARIABLE
+          messageId: msgId
         })
       })
 
@@ -1464,7 +1448,6 @@ function SimplifiedUserInterface({ user }) {
       console.log('==========================================')
 
       if (result.success) {
-        // Clear storage after success
         localStorage.removeItem('lastPaymentMethod')
         localStorage.removeItem('lastPaymentAmount')
         localStorage.removeItem('lastMessageId')
@@ -1480,6 +1463,34 @@ function SimplifiedUserInterface({ user }) {
       alert(`❌ Could not verify payment: ${error.message}\n\nOrder ID: ${orderId}\nPlease contact support.`)
     }
   }
+  // ⬆️⬆️⬆️ DEFINE verifyPayment FIRST ⬆️⬆️⬆️
+
+  // ⬇️⬇️⬇️ THEN USE IT IN useEffect ⬇️⬇️⬇️
+  // Handle payment return from Cashfree
+  useEffect(() => {
+    console.log('🔍 Component mounted, checking for payment return...')
+    console.log('Current URL:', window.location.href)
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const paymentSuccess = urlParams.has('payment-success')
+    const orderId = urlParams.get('order_id')
+
+    console.log('Has payment-success param:', paymentSuccess)
+    console.log('Order ID from URL:', orderId)
+
+    if (paymentSuccess && orderId) {
+      console.log('✅ Payment return detected! Starting verification...')
+
+      // Verify the payment
+      verifyPayment(orderId)
+
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname)
+    } else {
+      console.log('❌ No payment return detected')
+    }
+  }, [])
+  // ⬆️⬆️⬆️ THEN USE IT IN useEffect ⬆️⬆️⬆️
 
   // Handle user-initiated session completion
   const handleUserCompleteSession = async () => {
