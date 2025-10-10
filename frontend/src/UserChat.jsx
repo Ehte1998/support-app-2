@@ -15,9 +15,9 @@ function FileUploadComponent({ messageId, onUploadSuccess, onUploadError }) {
     if (!file) return
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 
-                         'video/mp4', 'video/mov', 'video/avi', 'video/mkv', 'video/webm', 'video/3gp']
-    
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/mov', 'video/avi', 'video/mkv', 'video/webm', 'video/3gp']
+
     if (!allowedTypes.includes(file.type)) {
       onUploadError('Only image and video files are allowed')
       return
@@ -90,7 +90,7 @@ function FileUploadComponent({ messageId, onUploadSuccess, onUploadError }) {
   const handleDrop = (e) => {
     e.preventDefault()
     setDragOver(false)
-    
+
     const files = Array.from(e.dataTransfer.files)
     if (files.length > 0) {
       handleFileSelect(files[0])
@@ -128,7 +128,7 @@ function FileUploadComponent({ messageId, onUploadSuccess, onUploadError }) {
             Uploading... {uploadProgress}%
           </div>
           <div className="upload-progress">
-            <div 
+            <div
               className={`upload-progress-bar ${uploadProgress > 0 ? 'progress-bar-active' : ''}`}
               style={{ width: `${uploadProgress}%` }}
             />
@@ -153,7 +153,7 @@ function FileUploadComponent({ messageId, onUploadSuccess, onUploadError }) {
           style={{ display: 'none' }}
           id={`chat-file-input-${messageId}`}
         />
-        
+
         <label
           htmlFor={`chat-file-input-${messageId}`}
           style={{ cursor: 'pointer', width: '100%', display: 'block' }}
@@ -182,7 +182,7 @@ function FileUploadComponent({ messageId, onUploadSuccess, onUploadError }) {
           </div>
         </label>
       </div>
-      
+
       {/* Caption input */}
       <input
         type="text"
@@ -250,7 +250,7 @@ function MediaMessage({ message, isOwnMessage }) {
               Loading image...
             </div>
           )}
-          
+
           {imageError ? (
             <div style={{
               width: '200px',
@@ -345,7 +345,7 @@ function MediaMessage({ message, isOwnMessage }) {
     <div>
       {/* Render media */}
       {renderMedia()}
-      
+
       {/* Caption if exists */}
       {message.message && (
         <div style={{
@@ -356,7 +356,7 @@ function MediaMessage({ message, isOwnMessage }) {
           {message.message}
         </div>
       )}
-      
+
       {/* File info */}
       <div style={{
         marginTop: '0.5rem',
@@ -400,7 +400,7 @@ function RatingComponent({ onRatingSubmit }) {
       alert('Please select a rating before submitting')
       return
     }
-    
+
     onRatingSubmit(rating, feedback)
     setSubmitted(true)
   }
@@ -474,11 +474,11 @@ function RatingComponent({ onRatingSubmit }) {
         marginBottom: '1rem'
       }}>
         {rating === 0 ? 'Click a star to rate' :
-        rating === 1 ? 'Poor' :
-        rating === 2 ? 'Fair' :
-        rating === 3 ? 'Good' :
-        rating === 4 ? 'Very Good' :
-        'Excellent'}
+          rating === 1 ? 'Poor' :
+            rating === 2 ? 'Fair' :
+              rating === 3 ? 'Good' :
+                rating === 4 ? 'Very Good' :
+                  'Excellent'}
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
@@ -566,7 +566,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
     try {
       // VALIDATION: Check payment method is set
       console.log('🔍 Starting payment with method:', selectedPaymentMethod)
-      
+
       if (!selectedPaymentMethod || selectedPaymentMethod === '') {
         console.error('❌ Payment method is empty!')
         setMessage('Please select a payment method')
@@ -581,7 +581,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
           setLoading(false)
           return
         }
-        
+
         if (customerDetails.phone.length !== 10) {
           setMessage('Please enter a valid 10-digit phone number')
           setLoading(false)
@@ -637,14 +637,54 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
           throw new Error('PayPal approval URL not found')
         }
       }
-      
-      // Handle UPI/GPay Payment
+
+      // Handle UPI/GPay Payment with Cashfree SDK
       else if (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') {
-        if (orderData.paymentLink) {
-          console.log('🔗 Redirecting to payment gateway...')
-          window.location.href = orderData.paymentLink
+        if (orderData.paymentSessionId) {
+          console.log('🔗 Loading Cashfree checkout...')
+
+          // Dynamically load Cashfree SDK
+          const loadCashfreeSDK = () => {
+            return new Promise((resolve, reject) => {
+              if (window.Cashfree) {
+                resolve(window.Cashfree)
+                return
+              }
+
+              const script = document.createElement('script')
+              script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js'
+              script.onload = () => resolve(window.Cashfree)
+              script.onerror = () => reject(new Error('Failed to load Cashfree SDK'))
+              document.head.appendChild(script)
+            })
+          }
+
+          // Initialize and open checkout
+          loadCashfreeSDK().then((Cashfree) => {
+            const environment = API_URL.includes('localhost') || API_URL.includes('sandbox')
+              ? 'sandbox'
+              : 'production'
+
+            const cashfree = Cashfree({
+              mode: environment
+            })
+
+            const checkoutOptions = {
+              paymentSessionId: orderData.paymentSessionId,
+              redirectTarget: '_self'
+            }
+
+            console.log('✅ Cashfree checkout initialized')
+            console.log('   Mode:', environment)
+            console.log('   Session ID:', orderData.paymentSessionId)
+            cashfree.checkout(checkoutOptions)
+          }).catch(error => {
+            console.error('❌ SDK error:', error)
+            setMessage('Failed to load payment gateway')
+            setLoading(false)
+          })
         } else {
-          throw new Error('Payment link not found')
+          throw new Error('Payment session not found')
         }
       }
 
@@ -667,11 +707,11 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 
   const handlePayment = () => {
     const amount = customAmount ? parseInt(customAmount) : selectedAmount
-    
+
     console.log('💰 Payment button clicked')
     console.log('   Amount:', amount)
     console.log('   Method:', selectedPaymentMethod)
-    
+
     if (!amount || amount < 1) {
       setMessage('Please enter a valid amount')
       return
@@ -688,24 +728,24 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
   const currentAmount = customAmount ? parseInt(customAmount) : selectedAmount
 
   const paymentMethods = [
-    { 
-      id: 'upi', 
-      name: 'UPI', 
-      icon: '💳', 
+    {
+      id: 'upi',
+      name: 'UPI',
+      icon: '💳',
       color: '#5f259f',
       description: 'PhonePe, Paytm, BHIM',
     },
-    { 
-      id: 'gpay', 
-      name: 'Google Pay', 
-      icon: '🟢', 
+    {
+      id: 'gpay',
+      name: 'Google Pay',
+      icon: '🟢',
       color: '#1a73e8',
       description: 'Google Pay UPI',
     },
-    { 
-      id: 'paypal', 
-      name: 'PayPal', 
-      icon: '💙', 
+    {
+      id: 'paypal',
+      name: 'PayPal',
+      icon: '💙',
       color: '#0070ba',
       description: 'International',
     }
@@ -802,12 +842,12 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
                 disabled={loading}
                 style={{
                   padding: '1rem 0.5rem',
-                  border: selectedPaymentMethod === method.id 
-                    ? `3px solid ${method.color}` 
+                  border: selectedPaymentMethod === method.id
+                    ? `3px solid ${method.color}`
                     : '2px solid #e5e7eb',
                   borderRadius: '0.75rem',
-                  background: selectedPaymentMethod === method.id 
-                    ? `${method.color}10` 
+                  background: selectedPaymentMethod === method.id
+                    ? `${method.color}10`
                     : 'white',
                   cursor: loading ? 'not-allowed' : 'pointer',
                   textAlign: 'center',
@@ -993,10 +1033,9 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
               transition: 'all 0.2s'
             }}
           >
-            {loading ? 'Processing...' : `Pay ₹${currentAmount || 0} via ${
-              selectedPaymentMethod === 'paypal' ? 'PayPal' :
-              selectedPaymentMethod === 'gpay' ? 'GPay' : 'UPI'
-            }`}
+            {loading ? 'Processing...' : `Pay ₹${currentAmount || 0} via ${selectedPaymentMethod === 'paypal' ? 'PayPal' :
+                selectedPaymentMethod === 'gpay' ? 'GPay' : 'UPI'
+              }`}
           </button>
 
           <button
@@ -1035,7 +1074,7 @@ function MeetingLinksButtons({ messageId, user }) {
     const checkMeetingLinks = async () => {
       try {
         if (!messageId) return
-        
+
         const response = await fetch(`${API_URL}/api/messages/${messageId}`)
         if (response.ok) {
           const messageData = await response.json()
@@ -1057,7 +1096,7 @@ function MeetingLinksButtons({ messageId, user }) {
 
     setLoading(true)
     setError('')
-    
+
     try {
       const token = localStorage.getItem('userToken')
       if (!token) {
@@ -1108,22 +1147,22 @@ function MeetingLinksButtons({ messageId, user }) {
   // FORM VIEW - Only show if explicitly opened
   if (showLinkForm === true) {
     return (
-      <div style={{ 
-        padding: '1rem', 
-        background: '#f9fafb', 
+      <div style={{
+        padding: '1rem',
+        background: '#f9fafb',
         borderRadius: '0.5rem',
         border: '1px solid #e5e7eb',
         width: '100%'
       }}>
-        <h4 style={{ 
-          margin: '0 0 1rem 0', 
-          fontSize: '0.875rem', 
+        <h4 style={{
+          margin: '0 0 1rem 0',
+          fontSize: '0.875rem',
           fontWeight: '600',
           color: '#374151'
         }}>
           Set Your Meeting Links
         </h4>
-        
+
         {error && (
           <div style={{
             padding: '0.5rem',
@@ -1137,7 +1176,7 @@ function MeetingLinksButtons({ messageId, user }) {
             {error}
           </div>
         )}
-        
+
         <div style={{ marginBottom: '0.75rem' }}>
           <input
             type="url"
@@ -1169,7 +1208,7 @@ function MeetingLinksButtons({ messageId, user }) {
             }}
           />
         </div>
-        
+
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
             onClick={handleSetUserLinks}
@@ -1229,7 +1268,7 @@ function MeetingLinksButtons({ messageId, user }) {
       >
         📱 Google Meet
       </button>
-      
+
       {/* Static Zoom Button - Always Available with Landing Page */}
       <button
         onClick={() => {
@@ -1271,7 +1310,7 @@ function MeetingLinksButtons({ messageId, user }) {
           📹 My Google Meet
         </button>
       )}
-      
+
       {/* User's Custom Zoom Link */}
       {meetingLinks?.userZoom && (
         <button
@@ -1293,7 +1332,7 @@ function MeetingLinksButtons({ messageId, user }) {
           📹 My Zoom Room
         </button>
       )}
-      
+
       {/* Set Custom Links Button */}
       <button
         onClick={handleOpenForm}
@@ -1373,7 +1412,7 @@ function SimplifiedUserInterface({ user }) {
           setSessionStatus('completed')
           setShowChat(false)
           setShowRating(true)
-          
+
           if (socket) {
             socket.emit('user-completed-session', {
               messageId: messageId,
@@ -1432,8 +1471,8 @@ function SimplifiedUserInterface({ user }) {
       newSocket.on('messageStatusUpdate', (data) => {
         if (data.id === messageId) {
           setSessionStatus(data.status)
-          
-          switch(data.status) {
+
+          switch (data.status) {
             case 'in-chat':
               fetchChatMessages()
               break
@@ -1492,14 +1531,14 @@ function SimplifiedUserInterface({ user }) {
           'Authorization': `Bearer ${token}`
         }
       })
-      
+
       if (response.ok) {
         const messages = await response.json()
         if (messages.length > 0) {
           const latestMessage = messages[0]
           setMessageId(latestMessage._id)
           setSubmitted(true)
-          
+
           if (latestMessage.status === 'completed') {
             setShowPayment(true)
           } else {
@@ -1517,10 +1556,10 @@ function SimplifiedUserInterface({ user }) {
       const response = await fetch(`${API_URL}/api/messages/${msgId}`)
       if (response.ok) {
         const messageData = await response.json()
-        
+
         setSessionStatus(messageData.status)
         setChatMessages(messageData.chatMessages || [])
-        
+
         if (messageData.status === 'completed') {
           setShowChat(false)
           setShowPayment(true)
@@ -1528,7 +1567,7 @@ function SimplifiedUserInterface({ user }) {
           setShowChat(true)
           setShowPayment(false)
         }
-        
+
         if (messageData.meetingLinks && (messageData.meetingLinks.googleMeet || messageData.meetingLinks.zoom)) {
           setCallNotification({
             messageId: msgId,
@@ -1544,7 +1583,7 @@ function SimplifiedUserInterface({ user }) {
 
   const fetchChatMessages = async () => {
     if (!messageId) return
-    
+
     try {
       const response = await fetch(`${API_URL}/api/messages/${messageId}`)
       if (response.ok) {
@@ -1593,7 +1632,7 @@ function SimplifiedUserInterface({ user }) {
 
         if (response.ok) {
           const result = await response.json()
-          
+
           setMessageId(result.id)
           setSubmitted(true)
           setShowChat(true)
@@ -1688,7 +1727,7 @@ function SimplifiedUserInterface({ user }) {
   }
 
   if (showPayment && messageId) {
-    return <PaymentInterface 
+    return <PaymentInterface
       messageId={messageId}
       onPaymentComplete={(amount) => {
         setShowPayment(false)
@@ -1710,9 +1749,9 @@ function SimplifiedUserInterface({ user }) {
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         padding: '2rem'
       }}>
-        <div style={{ 
-          background: 'white', 
-          borderRadius: '1rem', 
+        <div style={{
+          background: 'white',
+          borderRadius: '1rem',
           overflow: 'hidden',
           height: 'calc(100vh - 4rem)',
           display: 'flex',
@@ -1726,24 +1765,24 @@ function SimplifiedUserInterface({ user }) {
             <div style={{ marginBottom: '1rem' }}>
               <h2 style={{ margin: 0, color: '#1f2937' }}>Chat with Supporter</h2>
               <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                Status: <span style={{ 
+                Status: <span style={{
                   color: sessionStatus === 'pending' ? '#f59e0b' :
-                        sessionStatus === 'in-chat' ? '#10b981' : 
-                        sessionStatus === 'in-call' ? '#3b82f6' : 
+                    sessionStatus === 'in-chat' ? '#10b981' :
+                      sessionStatus === 'in-call' ? '#3b82f6' :
                         sessionStatus === 'completed' ? '#f59e0b' : '#6b7280',
                   fontWeight: '500'
                 }}>
                   {sessionStatus === 'pending' ? 'Waiting for Supporter' :
-                  sessionStatus === 'in-chat' ? 'In Chat' : 
-                  sessionStatus === 'in-call' ? 'In Call' : 
-                  sessionStatus === 'completed' ? 'Conversation Ended' : 'Pending'}
+                    sessionStatus === 'in-chat' ? 'In Chat' :
+                      sessionStatus === 'in-call' ? 'In Call' :
+                        sessionStatus === 'completed' ? 'Conversation Ended' : 'Pending'}
                 </span>
               </div>
             </div>
-            
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'flex-start',
               gap: '1rem',
               flexWrap: 'wrap'
@@ -1754,7 +1793,7 @@ function SimplifiedUserInterface({ user }) {
                 </div>
                 <MeetingLinksButtons messageId={messageId} user={user} />
               </div>
-              
+
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
                   onClick={() => setShowFileUpload(!showFileUpload)}
@@ -1807,7 +1846,7 @@ function SimplifiedUserInterface({ user }) {
                 >
                   Payment Options
                 </button>
-                
+
                 <button
                   onClick={startNewSession}
                   style={{
@@ -1833,7 +1872,7 @@ function SimplifiedUserInterface({ user }) {
               ✅ {uploadSuccess}
             </div>
           )}
-          
+
           {uploadError && (
             <div className="error-message notification-enter">
               ❌ {uploadError}
@@ -1923,7 +1962,7 @@ function SimplifiedUserInterface({ user }) {
             flexDirection: 'column',
             gap: '1rem'
           }}
-          className="chat-messages"
+            className="chat-messages"
           >
             {sessionStatus === 'pending' && chatMessages.length === 1 && (
               <div style={{
@@ -1992,9 +2031,9 @@ function SimplifiedUserInterface({ user }) {
                           marginTop: '0.5rem',
                           opacity: 0.7
                         }}>
-                          {new Date(msg.timestamp).toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
+                          {new Date(msg.timestamp).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
                           })}
                         </div>
                       </>
@@ -2037,7 +2076,7 @@ function SimplifiedUserInterface({ user }) {
                     Found this helpful? Contribute any amount you feel comfortable with.
                   </div>
                 </div>
-                
+
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <button
                     onClick={() => {
@@ -2061,13 +2100,13 @@ function SimplifiedUserInterface({ user }) {
                   >
                     💳 Make Payment
                   </button>
-                  
+
                   <div style={{
                     fontSize: '0.75rem',
                     color: '#6b7280',
                     textAlign: 'center'
                   }}>
-                    Pay what you<br/>feel it's worth
+                    Pay what you<br />feel it's worth
                   </div>
                 </div>
               </div>
