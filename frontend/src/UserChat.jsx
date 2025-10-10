@@ -574,6 +574,12 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
         return
       }
 
+      // Store payment details in localStorage BEFORE making request
+      localStorage.setItem('lastPaymentMethod', selectedPaymentMethod)
+      localStorage.setItem('lastPaymentAmount', amount.toString())
+      localStorage.setItem('lastMessageId', messageId || '')
+      console.log('💾 Stored payment info:', { method: selectedPaymentMethod, amount, messageId })
+
       // Validate customer details for UPI/GPay
       if (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') {
         if (!customerDetails.name || !customerDetails.email || !customerDetails.phone) {
@@ -1418,6 +1424,19 @@ function SimplifiedUserInterface({ user }) {
     try {
       console.log('✅ Verifying payment for order:', orderId)
 
+      // ⬇️⬇️⬇️ GET PAYMENT METHOD FROM LOCALSTORAGE ⬇️⬇️⬇️
+      const storedMethod = localStorage.getItem('lastPaymentMethod')
+      const storedMessageId = localStorage.getItem('lastMessageId')
+
+      const paymentMethod = storedMethod || 'upi' // Fallback to upi
+      const msgId = messageId || storedMessageId
+
+      console.log('📦 Retrieved from storage:', {
+        paymentMethod,
+        messageId: msgId,
+        orderId
+      })
+
       const response = await fetch(`${API_URL}/api/verify-payment`, {
         method: 'POST',
         headers: {
@@ -1434,6 +1453,10 @@ function SimplifiedUserInterface({ user }) {
       console.log('📥 Verification result:', result)
 
       if (result.success) {
+        // ⬇️⬇️⬇️ CLEAR STORAGE AFTER SUCCESS ⬇️⬇️⬇️
+        localStorage.removeItem('lastPaymentMethod')
+        localStorage.removeItem('lastPaymentAmount')
+        localStorage.removeItem('lastMessageId')
         alert('✅ Payment successful! Thank you for your support.')
         startNewSession()
       } else {
