@@ -1397,6 +1397,54 @@ function SimplifiedUserInterface({ user }) {
     scrollToBottom()
   }, [chatMessages])
 
+  // Handle payment return from Cashfree
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const paymentSuccess = urlParams.has('payment-success')
+    const orderId = urlParams.get('order_id')
+
+    if (paymentSuccess && orderId) {
+      console.log('🔍 Payment return detected:', { orderId })
+
+      // Verify the payment
+      verifyPayment(orderId)
+
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
+  const verifyPayment = async (orderId) => {
+    try {
+      console.log('✅ Verifying payment for order:', orderId)
+
+      const response = await fetch(`${API_URL}/api/verify-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentMethod: 'upi', // or 'gpay' depending on what user selected
+          orderId: orderId,
+          messageId: messageId
+        })
+      })
+
+      const result = await response.json()
+      console.log('📥 Verification result:', result)
+
+      if (result.success) {
+        alert('✅ Payment successful! Thank you for your support.')
+        startNewSession()
+      } else {
+        alert('❌ Payment verification failed. Please contact support if amount was deducted.')
+      }
+    } catch (error) {
+      console.error('💥 Verification error:', error)
+      alert('❌ Could not verify payment. Please contact support.')
+    }
+  }
+
   // Handle user-initiated session completion
   const handleUserCompleteSession = async () => {
     if (confirm('Are you sure you want to end this conversation?')) {
