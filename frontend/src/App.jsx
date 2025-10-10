@@ -1,4 +1,4 @@
-// App.jsx - Updated with payment status pages
+// App.jsx - Updated with payment verification flow
 import { useState, useEffect } from 'react'
 import AdminDashboard from './AdminDashboard'
 import LoginForm from './LoginForm'
@@ -113,25 +113,18 @@ function AppContent() {
                      isContactPage ? 'contact' : 
                      isPaymentSuccessPage || isPaymentFailedPage ? 'payment' : 'home'
 
-  // Handle payment success page
-  if (isPaymentSuccessPage) {
+  // ⬇️⬇️⬇️ UPDATED: Let SimplifiedUserInterface handle payment verification ⬇️⬇️⬇️
+  // When Cashfree redirects with payment-success or payment-failed, 
+  // the SimplifiedUserInterface component will verify the payment
+  if (isPaymentSuccessPage || isPaymentFailedPage) {
     return (
-      <div>
-        <Navigation currentPage={currentPage} />
-        <PaymentSuccess />
-      </div>
+      <UserAuthProvider>
+        <Navigation currentPage="home" />
+        <AuthenticatedUserInterface />
+      </UserAuthProvider>
     )
   }
-
-  // Handle payment failed/cancelled page
-  if (isPaymentFailedPage) {
-    return (
-      <div>
-        <Navigation currentPage={currentPage} />
-        <PaymentFailed />
-      </div>
-    )
-  }
+  // ⬆️⬆️⬆️ UPDATED ⬆️⬆️⬆️
 
   // Handle admin dashboard routing
   if (isAdminMode) {
