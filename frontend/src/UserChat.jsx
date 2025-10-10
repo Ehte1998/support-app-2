@@ -1422,20 +1422,29 @@ function SimplifiedUserInterface({ user }) {
 
   const verifyPayment = async (orderId) => {
     try {
-      console.log('✅ Verifying payment for order:', orderId)
+      console.log('==========================================')
+      console.log('✅ STARTING PAYMENT VERIFICATION')
+      console.log('==========================================')
+      console.log('Order ID from URL:', orderId)
 
-      // ⬇️⬇️⬇️ GET PAYMENT METHOD FROM LOCALSTORAGE ⬇️⬇️⬇️
+      // Get stored data from localStorage
       const storedMethod = localStorage.getItem('lastPaymentMethod')
       const storedMessageId = localStorage.getItem('lastMessageId')
+      const storedAmount = localStorage.getItem('lastPaymentAmount')
+
+      console.log('📦 Retrieved from localStorage:')
+      console.log('  - lastPaymentMethod:', storedMethod)
+      console.log('  - lastMessageId:', storedMessageId)
+      console.log('  - lastPaymentAmount:', storedAmount)
+      console.log('  - messageId from state:', messageId)
 
       const paymentMethod = storedMethod || 'upi' // Fallback to upi
       const msgId = messageId || storedMessageId
 
-      console.log('📦 Retrieved from storage:', {
-        paymentMethod,
-        messageId: msgId,
-        orderId
-      })
+      console.log('📤 Sending verification request with:')
+      console.log('  - paymentMethod:', paymentMethod) // ✅ Should show 'upi' or 'gpay'
+      console.log('  - orderId:', orderId)
+      console.log('  - messageId:', msgId)
 
       const response = await fetch(`${API_URL}/api/verify-payment`, {
         method: 'POST',
@@ -1443,28 +1452,32 @@ function SimplifiedUserInterface({ user }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          paymentMethod: 'upi', // or 'gpay' depending on what user selected
+          paymentMethod: paymentMethod, // ✅ USE THE VARIABLE, NOT HARDCODED 'upi'
           orderId: orderId,
-          messageId: messageId
+          messageId: msgId             // ✅ USE THE VARIABLE
         })
       })
 
+      console.log('📥 Response status:', response.status)
       const result = await response.json()
-      console.log('📥 Verification result:', result)
+      console.log('📥 Verification result:', JSON.stringify(result, null, 2))
+      console.log('==========================================')
 
       if (result.success) {
-        // ⬇️⬇️⬇️ CLEAR STORAGE AFTER SUCCESS ⬇️⬇️⬇️
+        // Clear storage after success
         localStorage.removeItem('lastPaymentMethod')
         localStorage.removeItem('lastPaymentAmount')
         localStorage.removeItem('lastMessageId')
+
         alert('✅ Payment successful! Thank you for your support.')
         startNewSession()
       } else {
-        alert('❌ Payment verification failed. Please contact support if amount was deducted.')
+        console.error('❌ Verification failed:', result.error)
+        alert(`❌ Payment verification failed: ${result.error || 'Unknown error'}\n\nPlease contact support if amount was deducted.\nOrder ID: ${orderId}`)
       }
     } catch (error) {
       console.error('💥 Verification error:', error)
-      alert('❌ Could not verify payment. Please contact support.')
+      alert(`❌ Could not verify payment: ${error.message}\n\nOrder ID: ${orderId}\nPlease contact support.`)
     }
   }
 
