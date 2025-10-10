@@ -640,10 +640,13 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 
       // Handle UPI/GPay Payment with Cashfree SDK
       else if (selectedPaymentMethod === 'upi' || selectedPaymentMethod === 'gpay') {
-        if (orderData.paymentSessionId) {
-          console.log('🔗 Loading Cashfree checkout...')
+        console.log('🔍 Checking for paymentSessionId in:', orderData)
 
-          // Dynamically load Cashfree SDK
+        const sessionId = orderData.paymentSessionId || orderData.payment_session_id || orderData.sessionId
+
+        if (sessionId) {
+          console.log('🔗 Loading Cashfree checkout with session:', sessionId)
+
           const loadCashfreeSDK = () => {
             return new Promise((resolve, reject) => {
               if (window.Cashfree) {
@@ -659,24 +662,23 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             })
           }
 
-          // Initialize and open checkout
           loadCashfreeSDK().then((Cashfree) => {
             const environment = API_URL.includes('localhost') || API_URL.includes('sandbox')
               ? 'sandbox'
               : 'production'
+
+            console.log('✅ Initializing Cashfree with environment:', environment)
 
             const cashfree = Cashfree({
               mode: environment
             })
 
             const checkoutOptions = {
-              paymentSessionId: orderData.paymentSessionId,
+              paymentSessionId: sessionId,
               redirectTarget: '_self'
             }
 
-            console.log('✅ Cashfree checkout initialized')
-            console.log('   Mode:', environment)
-            console.log('   Session ID:', orderData.paymentSessionId)
+            console.log('✅ Opening Cashfree checkout')
             cashfree.checkout(checkoutOptions)
           }).catch(error => {
             console.error('❌ SDK error:', error)
@@ -684,6 +686,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             setLoading(false)
           })
         } else {
+          console.error('❌ No session ID found in orderData:', orderData)
           throw new Error('Payment session not found')
         }
       }
@@ -1034,7 +1037,7 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
             }}
           >
             {loading ? 'Processing...' : `Pay ₹${currentAmount || 0} via ${selectedPaymentMethod === 'paypal' ? 'PayPal' :
-                selectedPaymentMethod === 'gpay' ? 'GPay' : 'UPI'
+              selectedPaymentMethod === 'gpay' ? 'GPay' : 'UPI'
               }`}
           </button>
 
