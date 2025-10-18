@@ -239,7 +239,7 @@ export function PrivacyPolicy() {
           <h2 style={{ color: '#1f2937', marginTop: '2rem' }}>Third-Party Services</h2>
           <p>We use third-party services for:</p>
           <ul>
-            <li>Payment processing (Razorpay) - voluntary contributions only</li>
+            <li>Payment processing (Cashfree for UPI/GPay, PayPal for international) - voluntary contributions only</li>
             <li>Video calling (Google Meet, Zoom) - optional user choice</li>
             <li>Cloud hosting and infrastructure</li>
           </ul>
