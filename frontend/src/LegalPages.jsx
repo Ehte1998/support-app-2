@@ -69,7 +69,6 @@ export function TermsAndConditions() {
           
           <h2 style={{ color: '#1f2937', marginTop: '2rem' }}>3. User Eligibility</h2>
           <ul>
-            <li>You must be at least 18 years old to use our services</li>
             <li>You must not be in a mental health crisis requiring professional intervention</li>
             <li>You acknowledge this is peer support, not professional therapy</li>
           </ul>
