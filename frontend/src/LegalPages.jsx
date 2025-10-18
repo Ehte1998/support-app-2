@@ -131,7 +131,7 @@ export function TermsAndConditions() {
           <p>These terms are governed by the laws of India. Any disputes shall be resolved in the courts of [Your Jurisdiction].</p>
           
           <h2 style={{ color: '#1f2937', marginTop: '2rem' }}>14. Contact Information</h2>
-          <p>For questions about these terms, contact: support@feelingsshare.com</p>
+          <p>For questions about these terms, contact: ehteshamhusain00@gmail.com</p>
           
           <div style={{
             background: '#fef3c7',
@@ -248,10 +248,10 @@ export function PrivacyPolicy() {
           <p>Our platform is not intended for users under 18. We do not knowingly collect information from minors.</p>
           
           <h2 style={{ color: '#1f2937', marginTop: '2rem' }}>Data Deletion</h2>
-          <p>To request account deletion, contact us at privacy@feelingsshare.com or use the in-app deletion feature. We will process requests within 30 days.</p>
+          <p>To request account deletion, contact us at ehteshamhusain00@gmail.com or use the in-app deletion feature. We will process requests within 30 days.</p>
           
           <h2 style={{ color: '#1f2937', marginTop: '2rem' }}>Contact Us</h2>
-          <p>For privacy questions or concerns: privacy@feelingsshare.com</p>
+          <p>For privacy questions or concerns: ehteshamhusain00@gmail.com</p>
         </div>
       </div>
     </div>
@@ -318,7 +318,7 @@ export function RefundPolicy() {
           <h2 style={{ color: '#1f2937', marginTop: '2rem' }}>Refund Request Process</h2>
           <p>If you believe you deserve a refund after making a voluntary contribution:</p>
           <ol>
-            <li>Contact support@feelingsshare.com within 7 days</li>
+            <li>Contact ehteshamhusain00@gmail.com within 7 days</li>
             <li>Explain your concerns and reasons for the refund request</li>
             <li>We will review your case and respond within 3-5 business days</li>
             <li>Approved refunds will be processed within 7-10 business days</li>
@@ -336,7 +336,7 @@ export function RefundPolicy() {
           <h2 style={{ color: '#1f2937', marginTop: '2rem' }}>Volunteer Conduct Issues</h2>
           <p>If you experience inappropriate behavior or ethical violations:</p>
           <ul>
-            <li>Report immediately to support@feelingsshare.com</li>
+            <li>Report immediately to ehteshamhusain00@gmail.com</li>
             <li>We will investigate all complaints thoroughly</li>
             <li>Appropriate corrective actions will be taken</li>
             <li>Full refunds may be provided for verified misconduct</li>
@@ -352,7 +352,7 @@ export function RefundPolicy() {
           
           <h2 style={{ color: '#1f2937', marginTop: '2rem' }}>Contact Information</h2>
           <p>For refund requests or questions:<br />
-          Email: support@feelingsshare.com<br />
+          Email: ehteshamhusain00@gmail.com<br />
           Response time: 24-48 hours</p>
         </div>
       </div>
@@ -433,14 +433,14 @@ export function ContactUs() {
                 Get help with your account, conversations, or technical issues
               </p>
               <a 
-                href="mailto:support@feelingsshare.com" 
+                href="mailto:ehteshamhusain00@gmail.com" 
                 style={{
                   color: '#3b82f6',
                   textDecoration: 'none',
                   fontWeight: '500'
                 }}
               >
-                support@feelingsshare.com
+                ehteshamhusain00@gmail.com
               </a>
             </div>
 
@@ -470,14 +470,14 @@ export function ContactUs() {
                 Questions about data privacy and confidentiality
               </p>
               <a 
-                href="mailto:privacy@feelingsshare.com" 
+                href="mailto:ehteshamhusain00@gmail.com" 
                 style={{
                   color: '#10b981',
                   textDecoration: 'none',
                   fontWeight: '500'
                 }}
               >
-                privacy@feelingsshare.com
+                ehteshamhusain00@gmail.com
               </a>
             </div>
           </div>
