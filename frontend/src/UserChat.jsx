@@ -636,8 +636,15 @@ function PaymentInterface({ messageId, onPaymentComplete, onSkip }) {
 
       // Handle PayPal Payment
       if (selectedPaymentMethod === 'paypal') {
+        // ✅ Store payment info for verification when user returns
+        localStorage.setItem('lastPaymentMethod', 'paypal')
+        localStorage.setItem('lastPaymentOrderId', orderData.orderId)
+        localStorage.setItem('lastMessageId', messageId)
+        localStorage.setItem('lastPaymentAmount', amount.toString())
+
         if (orderData.approvalUrl) {
           console.log('🔗 Redirecting to PayPal...')
+          console.log('💾 Stored payment details in localStorage')
           window.location.href = orderData.approvalUrl
         } else {
           throw new Error('PayPal approval URL not found')
@@ -1466,28 +1473,38 @@ function SimplifiedUserInterface({ user }) {
   // ⬆️⬆️⬆️ DEFINE verifyPayment FIRST ⬆️⬆️⬆️
 
   // ⬇️⬇️⬇️ THEN USE IT IN useEffect ⬇️⬇️⬇️
-  // Handle payment return from Cashfree
+  // Handle payment return from BOTH PayPal and Cashfree
   useEffect(() => {
     console.log('🔍 Component mounted, checking for payment return...')
     console.log('Current URL:', window.location.href)
 
     const urlParams = new URLSearchParams(window.location.search)
     const paymentSuccess = urlParams.has('payment-success')
-    const orderId = urlParams.get('order_id')
+
+    // Check for BOTH Cashfree AND PayPal order IDs
+    const cashfreeOrderId = urlParams.get('order_id')  // Cashfree format
+    const paypalToken = urlParams.get('token')         // PayPal format
+    const orderId = cashfreeOrderId || paypalToken     // Use whichever exists
 
     console.log('Has payment-success param:', paymentSuccess)
-    console.log('Order ID from URL:', orderId)
+    console.log('Cashfree Order ID:', cashfreeOrderId)
+    console.log('PayPal Token:', paypalToken)
+    console.log('Final Order ID:', orderId)
 
     if (paymentSuccess && orderId) {
       console.log('✅ Payment return detected! Starting verification...')
-
-      // Verify the payment
       verifyPayment(orderId)
 
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname)
     } else {
       console.log('❌ No payment return detected')
+
+      // Debug info
+      if (paymentSuccess && !orderId) {
+        console.error('⚠️ payment-success found but no order_id or token!')
+        console.error('   URL params:', Array.from(urlParams.entries()))
+      }
     }
   }, [])
   // ⬆️⬆️⬆️ THEN USE IT IN useEffect ⬆️⬆️⬆️
