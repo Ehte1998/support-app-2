@@ -152,7 +152,7 @@ export function TermsAndConditions() {
 }
 
 // Privacy Policy Component - UPDATED
-export default function PrivacyPolicy() {
+export function PrivacyPolicy() {
   return (
     <div style={{
       minHeight: '100vh',
